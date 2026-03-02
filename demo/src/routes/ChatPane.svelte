@@ -411,6 +411,7 @@
 		display: flex;
 		gap: 0.5rem;
 		padding: 0.75rem 1rem;
+		margin-bottom: 1.5rem;
 		border-top: 1px solid #262626;
 		background: #141414;
 		flex-shrink: 0;

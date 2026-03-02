@@ -29,11 +29,16 @@ export interface GuardianSearchOptions {
 export async function searchGuardian(options: GuardianSearchOptions): Promise<GuardianResult[]> {
 	const { query, tag, pageSize = 5 } = options;
 
+	// Default to last 30 days so results reflect current reporting
+	const fromDate = new Date();
+	fromDate.setDate(fromDate.getDate() - 30);
+
 	const params = new URLSearchParams({
 		q: query,
 		'show-fields': 'headline,byline,body,standfirst,wordcount',
 		'page-size': String(pageSize),
-		'order-by': 'relevance',
+		'order-by': 'newest',
+		'from-date': fromDate.toISOString().split('T')[0],
 		'api-key': GUARDIAN_API_KEY
 	});
 	if (tag) params.set('tag', tag);
