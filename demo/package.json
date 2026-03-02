@@ -1,0 +1,22 @@
+{
+  "name": "spur-demo",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite dev",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "@sveltejs/adapter-vercel": "^5",
+    "@sveltejs/kit": "^2",
+    "@sveltejs/vite-plugin-svelte": "^5",
+    "svelte": "^5",
+    "typescript": "^5",
+    "vite": "^6"
+  },
+  "dependencies": {
+    "@sveltejs/adapter-auto": "^7.0.1"
+  }
+}
