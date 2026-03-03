@@ -2,29 +2,12 @@ import type { RequestHandler } from './$types';
 import type { ArticleSummary } from '$lib/types';
 import { searchGuardian, truncateBody } from '$lib/server/guardian';
 import type { GuardianResult } from '$lib/server/guardian';
-import { startSession, emitEvents } from '$lib/server/oa';
+import { telemetry } from '$lib/server/oa';
 import { streamMistralChat, extractSearchQuery } from '$lib/server/mistral';
-
-function parseCitationMarkers(text: string): number[] {
-	const matches = text.matchAll(/\[(\d+)\]/g);
-	const indices = new Set<number>();
-	for (const m of matches) {
-		const idx = parseInt(m[1], 10) - 1; // [1]-indexed → 0-indexed
-		if (idx >= 0) indices.add(idx);
-	}
-	return [...indices].sort((a, b) => a - b);
-}
-
-/** Extract Guardian URLs from response text that weren't in our retrieved sources. */
-function parseInlineUrls(text: string, knownUrls: Set<string>): string[] {
-	const urlPattern = /https?:\/\/(?:www\.)?theguardian\.com\/[^\s)"\]]+/g;
-	const found = new Set<string>();
-	for (const match of text.matchAll(urlPattern)) {
-		const url = match[0].replace(/[.,;:]+$/, ''); // strip trailing punctuation
-		if (!knownUrls.has(url)) found.add(url);
-	}
-	return [...found];
-}
+import {
+	extractIndexedCitations,
+	extractCitationUrls
+} from '@openattribution/telemetry';
 
 /** Deduplicate sources by URL, keeping the first occurrence. */
 function deduplicateSources(sources: ArticleSummary[]): ArticleSummary[] {
@@ -74,15 +57,16 @@ export const POST: RequestHandler = async ({ request }) => {
 				// 3. Start or reuse OA session
 				let sid = sessionId;
 				if (!sid) {
-					const res = await startSession();
-					sid = res.session_id;
+					sid = await telemetry.startSession({ contentScope: 'spur-demo' });
 					send('session', { session_id: sid });
 				}
 
 				// 4. Emit content_retrieved for new articles only
 				if (newArticles.length > 0) {
 					const retrievedUrls = newArticles.map((a) => a.webUrl);
-					await emitEvents(sid, 'content_retrieved', retrievedUrls);
+					for (const url of retrievedUrls) {
+						await telemetry.recordEvent(sid, 'content_retrieved', { contentUrl: url });
+					}
 					send('telemetry', {
 						type: 'content_retrieved',
 						count: retrievedUrls.length,
@@ -168,17 +152,21 @@ export const POST: RequestHandler = async ({ request }) => {
 				}
 
 				// 7. Parse citations and emit content_cited
-				const citedIndices = parseCitationMarkers(fullResponse);
-				const validCited = citedIndices.filter((i) => i >= 0 && i < citableSources.length);
-				const citedUrls = validCited.map((i) => citableSources[i].url);
+				const indexedUrls = extractIndexedCitations(fullResponse, citableSources);
+				const inlineUrls = extractCitationUrls(fullResponse);
 
-				// Also pick up Guardian URLs the model found inside article body text
+				// Filter inline URLs to only those not already in our source list
 				const knownUrls = new Set(citableSources.map((s) => s.url));
-				const inlineUrls = parseInlineUrls(fullResponse, knownUrls);
-				const allCitedUrls = [...citedUrls, ...inlineUrls];
+				const extraUrls = inlineUrls.filter((u) => !knownUrls.has(u));
+				const allCitedUrls = [...new Set([...indexedUrls, ...extraUrls])];
 
 				if (allCitedUrls.length > 0) {
-					await emitEvents(sid, 'content_cited', allCitedUrls);
+					for (const url of allCitedUrls) {
+						await telemetry.recordEvent(sid, 'content_cited', {
+							contentUrl: url,
+							data: { citation_type: 'reference' }
+						});
+					}
 					send('telemetry', {
 						type: 'content_cited',
 						count: allCitedUrls.length,
@@ -187,10 +175,17 @@ export const POST: RequestHandler = async ({ request }) => {
 				}
 
 				// 8. Done - send all citable sources so client can link citations
+				// Re-derive cited indices for the citation marker mapping
+				const citedIndices: number[] = [];
+				for (const url of indexedUrls) {
+					const idx = citableSources.findIndex((s) => s.url === url);
+					if (idx >= 0 && !citedIndices.includes(idx)) citedIndices.push(idx);
+				}
+
 				send('done', {
 					session_id: sid,
 					allSources: citableSources,
-					citations: validCited.map((i) => ({
+					citations: citedIndices.map((i) => ({
 						marker: `[${i + 1}]`,
 						url: citableSources[i]?.url,
 						headline: citableSources[i]?.headline

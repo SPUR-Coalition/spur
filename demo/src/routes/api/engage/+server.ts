@@ -1,5 +1,5 @@
 import type { RequestHandler } from './$types';
-import { emitEvents } from '$lib/server/oa';
+import { telemetry } from '$lib/server/oa';
 
 export const POST: RequestHandler = async ({ request }) => {
 	const { sessionId, url } = await request.json();
@@ -9,7 +9,10 @@ export const POST: RequestHandler = async ({ request }) => {
 	}
 
 	try {
-		await emitEvents(sessionId, 'content_engaged', [url], { engagement_type: 'click' });
+		await telemetry.recordEvent(sessionId, 'content_engaged', {
+			contentUrl: url,
+			data: { engagement_type: 'click' }
+		});
 		return new Response(JSON.stringify({ status: 'ok' }), { status: 200 });
 	} catch (err) {
 		return new Response(JSON.stringify({ error: String(err) }), { status: 500 });
