@@ -24,13 +24,13 @@
 		display: flex;
 		height: 100%;
 		gap: 1px;
-		background: #262626;
+		background: #e5e7eb;
 	}
 
 	.pane {
 		display: flex;
 		flex-direction: column;
-		background: #0a0a0a;
+		background: #f8f9fa;
 		overflow: hidden;
 	}
 
@@ -51,9 +51,10 @@
 		font-weight: 600;
 		text-transform: uppercase;
 		letter-spacing: 0.1em;
-		color: #737373;
+		color: #6b7280;
 		padding: 0.5rem 1rem;
-		border-bottom: 1px solid #1a1a1a;
+		border-bottom: 1px solid #e5e7eb;
 		flex-shrink: 0;
+		background: #ffffff;
 	}
 </style>

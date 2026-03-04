@@ -30,7 +30,7 @@
 		align-items: center;
 		justify-content: center;
 		height: 100vh;
-		background: #0a0a0a;
+		background: #f8f9fa;
 	}
 
 	.card {
@@ -39,20 +39,19 @@
 		align-items: center;
 		gap: 1.25rem;
 		padding: 2.5rem;
-		background: #141414;
-		border: 1px solid #262626;
+		background: #ffffff;
+		border: 1px solid #e5e7eb;
 		border-radius: 8px;
 		width: 20rem;
 	}
 
 	.logo {
 		height: 2rem;
-		filter: invert(1);
 	}
 
 	.subtitle {
 		font-size: 0.8rem;
-		color: #737373;
+		color: #6b7280;
 		margin-top: -0.5rem;
 	}
 
@@ -65,28 +64,28 @@
 
 	input {
 		padding: 0.6rem 0.75rem;
-		background: #1a1a1a;
-		border: 1px solid #333;
+		background: #f9fafb;
+		border: 1px solid #d1d5db;
 		border-radius: 6px;
-		color: #e5e5e5;
+		color: #1a1a1a;
 		font-size: 0.85rem;
 		outline: none;
 		text-align: center;
 	}
 
 	input:focus {
-		border-color: #5400f9;
+		border-color: #7c3aed;
 	}
 
 	.error {
 		font-size: 0.75rem;
-		color: #ef4444;
+		color: #dc2626;
 		text-align: center;
 	}
 
 	button {
 		padding: 0.6rem 1rem;
-		background: #5400f9;
+		background: #7c3aed;
 		color: #fff;
 		border: none;
 		border-radius: 6px;
@@ -96,6 +95,6 @@
 	}
 
 	button:hover {
-		background: #4500d4;
+		background: #6d28d9;
 	}
 </style>

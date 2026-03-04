@@ -22,8 +22,8 @@
 
 	:global(body) {
 		font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-		background: #0a0a0a;
-		color: #e5e5e5;
+		background: #f8f9fa;
+		color: #1a1a1a;
 		height: 100vh;
 		overflow: hidden;
 	}
@@ -39,24 +39,23 @@
 		align-items: center;
 		gap: 1rem;
 		padding: 0.75rem 1.25rem;
-		background: #141414;
-		border-bottom: 1px solid #262626;
+		background: #ffffff;
+		border-bottom: 1px solid #e5e7eb;
 	}
 
 	.logo {
 		height: 1.4rem;
-		filter: invert(1);
 	}
 
 	.title {
 		font-size: 0.9rem;
 		font-weight: 500;
-		color: #d4d4d4;
+		color: #374151;
 	}
 
 	.subtitle {
 		font-size: 0.75rem;
-		color: #737373;
+		color: #6b7280;
 		margin-left: auto;
 	}
 

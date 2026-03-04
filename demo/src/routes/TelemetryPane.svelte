@@ -84,11 +84,11 @@
 
 	.session-id {
 		margin-left: auto;
-		color: #525252;
+		color: #9ca3af;
 	}
 
 	.session-id code {
-		color: #737373;
+		color: #6b7280;
 		font-family: 'SF Mono', 'Fira Code', monospace;
 	}
 
@@ -108,7 +108,7 @@
 		justify-content: center;
 		height: 100%;
 		gap: 0.5rem;
-		color: #525252;
+		color: #9ca3af;
 		font-size: 0.8rem;
 		text-align: center;
 	}
@@ -121,20 +121,20 @@
 	.event {
 		padding: 0.5rem 0.75rem;
 		border-radius: 6px;
-		border: 1px solid #262626;
-		background: #141414;
+		border: 1px solid #e5e7eb;
+		background: #ffffff;
 	}
 
 	.event.retrieved {
-		border-left: 3px solid #5400f9;
+		border-left: 3px solid #7c3aed;
 	}
 
 	.event.cited {
-		border-left: 3px solid #22c55e;
+		border-left: 3px solid #16a34a;
 	}
 
 	.event.engaged {
-		border-left: 3px solid #f59e0b;
+		border-left: 3px solid #d97706;
 	}
 
 	.event-header {
@@ -153,28 +153,28 @@
 	}
 
 	.badge-retrieved {
-		background: #1e0a3f;
-		color: #a78bfa;
+		background: #ede9fe;
+		color: #7c3aed;
 	}
 
 	.badge-cited {
-		background: #14532d;
-		color: #4ade80;
+		background: #dcfce7;
+		color: #16a34a;
 	}
 
 	.badge-engaged {
-		background: #422006;
-		color: #fbbf24;
+		background: #fef3c7;
+		color: #d97706;
 	}
 
 	.count {
 		font-size: 0.7rem;
-		color: #a3a3a3;
+		color: #6b7280;
 	}
 
 	.time {
 		font-size: 0.65rem;
-		color: #525252;
+		color: #9ca3af;
 		margin-left: auto;
 		font-family: 'SF Mono', 'Fira Code', monospace;
 	}
@@ -187,7 +187,7 @@
 
 	.url {
 		font-size: 0.7rem;
-		color: #737373;
+		color: #6b7280;
 		text-decoration: none;
 		font-family: 'SF Mono', 'Fira Code', monospace;
 		overflow: hidden;
@@ -196,7 +196,7 @@
 	}
 
 	.url:hover {
-		color: #a3a3a3;
+		color: #374151;
 	}
 
 	.legend {
@@ -204,10 +204,10 @@
 		align-items: center;
 		gap: 0.75rem;
 		padding: 0.4rem 1rem;
-		border-bottom: 1px solid #262626;
-		background: #141414;
+		border-bottom: 1px solid #e5e7eb;
+		background: #ffffff;
 		font-size: 0.6rem;
-		color: #525252;
+		color: #9ca3af;
 		flex-shrink: 0;
 	}
 
@@ -224,14 +224,14 @@
 	}
 
 	.retrieved-dot {
-		background: #5400f9;
+		background: #7c3aed;
 	}
 
 	.cited-dot {
-		background: #22c55e;
+		background: #16a34a;
 	}
 
 	.engaged-dot {
-		background: #f59e0b;
+		background: #d97706;
 	}
 </style>

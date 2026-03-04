@@ -172,14 +172,14 @@
 		align-items: center;
 		justify-content: center;
 		height: 100%;
-		color: #525252;
+		color: #9ca3af;
 		font-size: 0.8rem;
 		text-align: center;
 		gap: 0.5rem;
 	}
 
 	.error {
-		color: #ef4444;
+		color: #dc2626;
 	}
 
 	.hint {
@@ -199,8 +199,8 @@
 	}
 
 	.card {
-		background: #141414;
-		border: 1px solid #262626;
+		background: #ffffff;
+		border: 1px solid #e5e7eb;
 		border-radius: 6px;
 		padding: 0.6rem 0.75rem;
 	}
@@ -208,12 +208,12 @@
 	.card-value {
 		font-size: 1.3rem;
 		font-weight: 700;
-		color: #fff;
+		color: #111827;
 	}
 
 	.card-label {
 		font-size: 0.6rem;
-		color: #737373;
+		color: #9ca3af;
 		text-transform: uppercase;
 		letter-spacing: 0.05em;
 		margin-top: 0.15rem;
@@ -230,7 +230,7 @@
 		font-weight: 600;
 		text-transform: uppercase;
 		letter-spacing: 0.1em;
-		color: #525252;
+		color: #9ca3af;
 	}
 
 	.agent-list {
@@ -241,8 +241,8 @@
 
 	.agent-row {
 		padding: 0.4rem 0.6rem;
-		background: #141414;
-		border: 1px solid #1a1a1a;
+		background: #ffffff;
+		border: 1px solid #e5e7eb;
 		border-radius: 4px;
 		display: flex;
 		align-items: center;
@@ -251,7 +251,7 @@
 
 	.agent-name {
 		font-size: 0.7rem;
-		color: #38bdf8;
+		color: #0284c7;
 		font-family: 'SF Mono', 'Fira Code', monospace;
 	}
 
@@ -265,8 +265,8 @@
 		font-weight: 600;
 		padding: 0.1rem 0.3rem;
 		border-radius: 2px;
-		background: #0c2d48;
-		color: #38bdf8;
+		background: #e0f2fe;
+		color: #0284c7;
 		flex-shrink: 0;
 		font-family: 'SF Mono', 'Fira Code', monospace;
 	}
@@ -279,14 +279,14 @@
 
 	.url-row {
 		padding: 0.4rem 0.6rem;
-		background: #141414;
-		border: 1px solid #1a1a1a;
+		background: #ffffff;
+		border: 1px solid #e5e7eb;
 		border-radius: 4px;
 	}
 
 	.url-path {
 		font-size: 0.7rem;
-		color: #a78bfa;
+		color: #7c3aed;
 		text-decoration: none;
 		font-family: 'SF Mono', 'Fira Code', monospace;
 		display: block;
@@ -307,7 +307,7 @@
 
 	.stat {
 		font-size: 0.6rem;
-		color: #525252;
+		color: #9ca3af;
 	}
 
 	.event-row {
@@ -315,8 +315,8 @@
 		align-items: center;
 		gap: 0.5rem;
 		padding: 0.3rem 0.5rem;
-		background: #141414;
-		border: 1px solid #1a1a1a;
+		background: #ffffff;
+		border: 1px solid #e5e7eb;
 		border-radius: 4px;
 	}
 
@@ -329,23 +329,23 @@
 	}
 
 	.event-badge.retrieved {
-		background: #1e0a3f;
-		color: #a78bfa;
+		background: #ede9fe;
+		color: #7c3aed;
 	}
 
 	.event-badge.cited {
-		background: #14532d;
-		color: #4ade80;
+		background: #dcfce7;
+		color: #16a34a;
 	}
 
 	.event-badge.engaged {
-		background: #422006;
-		color: #fbbf24;
+		background: #fef3c7;
+		color: #d97706;
 	}
 
 	.event-url {
 		font-size: 0.65rem;
-		color: #737373;
+		color: #6b7280;
 		font-family: 'SF Mono', 'Fira Code', monospace;
 		overflow: hidden;
 		text-overflow: ellipsis;
@@ -355,7 +355,7 @@
 
 	.event-time {
 		font-size: 0.6rem;
-		color: #404040;
+		color: #9ca3af;
 		font-family: 'SF Mono', 'Fira Code', monospace;
 		flex-shrink: 0;
 	}
