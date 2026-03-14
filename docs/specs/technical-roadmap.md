@@ -16,15 +16,13 @@
 
 ---
 
-## Phase 1: Foundation
+## Phase 1: Platform
 
-**Goal:** SPUR members can audit their current posture and agree on what to require from AI platforms.
+**Goal:** SPUR members can sign up, claim their web properties, and have a working telemetry endpoint ready to receive data.
 
 ### 1.1 Member compliance audit - COMPLETE
 
 PolicyCheck scanned all five SPUR founding members on 2 March 2026. Full results in the [baseline report](../reference/policycheck-baseline.md) and [raw CSV](../../data/policycheck-results.csv).
-
-**Key findings:**
 
 | Publisher | AI bot blocking posture | RSL | Content Signals | TDMRep |
 |-----------|------------------------|-----|-----------------|--------|
@@ -34,57 +32,9 @@ PolicyCheck scanned all five SPUR founding members on 2 March 2026. Full results
 | Sky News | Mostly open (GPTBot + CCBot only) | None | None | None |
 | Telegraph | Total lockdown (57 user agents) | None | None | None |
 
-Five publishers, five different blocking strategies. Only the Guardian has an RSL licence. Zero adoption of Content Signals, TDMRep, or Markdown for Agents across all five members.
+### 1.2 SPUR telemetry endpoint - COMPLETE
 
-Deal structures are visible through robots.txt: FT allows GPTBot (likely OpenAI deal), Guardian allows GPTBot + Google-Extended (likely deals with both). These bilateral deals are being negotiated without usage data.
-
-**Tool:** [PolicyCheck batch CSV processing](https://github.com/openattribution-org/policycheck). Single command:
-```bash
-policycheck analyze --csv spur-members.csv --format csv --output spur-audit.csv
-```
-
-**Deliverable:** Complete. Spreadsheet with per-member compliance posture. Baseline report identifies gaps and quick wins.
-
-### 1.2 Retrieval + citation event specification
-
-Formalise the two core event types agreed in the kick-off. These are already defined in [OpenAttribution Telemetry v0.4](https://github.com/openattribution-org/telemetry/blob/main/SPECIFICATION.md). The full spec supports additional event types (commerce, engagement) - SPUR starts with these two and members can adopt others as needed.
-
-**SPUR Telemetry Profile v0.1:**
-
-| Event | What it means | Required fields |
-|-------|--------------|-----------------|
-| `content_retrieved` | AI system pulled this content into its context window | `content_url`, `timestamp` |
-| `content_cited` | AI system showed this content (or a derivative) to a user | `content_url`, `timestamp`, `citation_type` |
-
-Citation types: `direct_quote`, `paraphrase`, `reference`, `contradiction` (content retrieved but disagreed with - should not receive positive credit).
-
-**Privacy level recommendation for SPUR:** `minimal` (token counts + content URLs only, no query text, no user data). Publishers get enough to measure usage without requiring AI platforms to share conversation content.
-
-**Pricing model implications:** SPUR is [evaluating pay-per-crawl vs pay-per-inference](https://pressgazette.co.uk/news/uk-news-giants-form-nato-for-news-group-to-defend-against-ai/). These two event types directly enable **pay-per-inference** - the more publisher-friendly model. `content_retrieved` counts how often content enters the context window. `content_cited` counts how often it reaches users. Pay-per-crawl is already handled by existing infrastructure ([Cloudflare Pay Per Crawl](https://blog.cloudflare.com/content-signals-policy), [IAB CoMP CPCr](https://iabtechlab.com/content-monetization-protocols/)). Pay-per-inference is the gap. This is it.
-
-**Deliverable:** One-page SPUR Telemetry Profile document. Precise enough for OpenAI/Anthropic/Google to implement against.
-
-### 1.3 Baseline licensing clause template
-
-Draft the contractual language publishers can include in licensing agreements:
-
-> "Licensee shall emit [OpenAttribution Telemetry](https://github.com/openattribution-org/telemetry/blob/main/SPECIFICATION.md) events conforming to the SPUR Telemetry Profile v0.1 for all content retrieved or cited from Licensor's corpus. Events shall be transmitted to a telemetry endpoint designated by Licensor within 24 hours of the interaction."
-
-This gives publishers something concrete to put in front of AI platform legal teams.
-
-**Deliverable:** Template clause for member review. Not legal advice - members adapt for their own agreements.
-
----
-
-## Phase 2: Infrastructure
-
-**Goal:** A working telemetry endpoint that any SPUR member can point their licensing agreements at.
-
-### 2.1 SPUR telemetry endpoint - COMPLETE
-
-The production telemetry server has been built in Rust (axum + sqlx) and deployed to Fly.io. It lives in its own repo: [`oa-telemetry-server`](https://github.com/openattribution-org/oa-telemetry-server). The server receives telemetry signals from AI platforms and makes them available to the publisher whose content was used.
-
-**Architecture:**
+Production telemetry server built in Rust (axum + sqlx), deployed to Fly.io. Repo: [`oa-telemetry-server`](https://github.com/openattribution-org/oa-telemetry-server).
 
 ```
 AI Platform (OpenAI, Anthropic, Google, etc.)
@@ -93,81 +43,80 @@ AI Platform (OpenAI, Anthropic, Google, etc.)
     │  Header: X-API-Key: <spur-issued-key>
     ▼
 SPUR Telemetry Endpoint
-(OpenAttribution reference server)
     │
     │  Dashboard / API access per publisher
     ▼
 BBC  |  FT  |  Guardian  |  Sky  |  Telegraph  |  ...
 ```
 
-Each AI platform gets an API key. Each publisher gets read access to events involving their content (matched by URL domain). Privacy model ensures no publisher sees another's data.
+Multi-tenant. Each publisher sees only events involving their content (matched by URL domain). Hosted neutrally under OpenAttribution.
 
-**Key design decisions:**
-- **Hosted neutrally** - Not on any member's infrastructure. Cloud deployment under OpenAttribution.
-- **Multi-tenant** - Each publisher sees only their own content events.
-- **URL-based routing** - Events route to publishers based on `content_url` domain matching.
-- **Retention policy** - Agreed with members. Suggest 90 days raw, aggregated indefinitely.
+### 1.3 Publisher sign-up and domain claiming
 
-**Deliverable:** Running endpoint. API documentation. Onboarding guide for AI platforms.
+Each SPUR member registers their content domains (bbc.co.uk, bbc.com, theguardian.com, ft.com, news.sky.com, telegraph.co.uk). Domain verification via DNS TXT record or meta tag. API key issued per publisher for read access.
 
-### 2.2 Guardian structured API integration
+### 1.4 SPUR Telemetry Profile v0.1
 
-The Guardian was flagged in the kick-off as a good first content provider partner due to their existing structured API ([open-platform.theguardian.com](https://open-platform.theguardian.com/)). Use this as the first concrete integration:
+Two event types, already defined in [OpenAttribution Telemetry v0.4](https://github.com/openattribution-org/telemetry/blob/main/SPECIFICATION.md):
 
-1. Guardian content accessible via their API
-2. AI platform retrieves Guardian content → emits `content_retrieved` event
-3. AI platform cites Guardian content → emits `content_cited` event
-4. Guardian sees usage data in SPUR dashboard
+| Event | What it means | Required fields |
+|-------|--------------|-----------------|
+| `content_retrieved` | AI system pulled this content into its context window | `content_url`, `timestamp` |
+| `content_cited` | AI system showed this content (or a derivative) to a user | `content_url`, `timestamp`, `citation_type` |
 
-This is the proof point. One publisher, one AI platform, real telemetry flowing.
+Citation types: `direct_quote`, `paraphrase`, `reference`, `contradiction`.
 
-**Deliverable:** Working end-to-end demo with Guardian content.
+Privacy level: `minimal` (URLs + timestamps only, no query text, no user data).
 
-### 2.3 Bot authentication (pragmatic approach)
+### 1.5 Licensing clause template
 
-Two layers, phased:
+> "Licensee shall emit [OpenAttribution Telemetry](https://github.com/openattribution-org/telemetry/blob/main/SPECIFICATION.md) events conforming to the SPUR Telemetry Profile v0.1 for all content retrieved or cited from Licensor's corpus. Events shall be transmitted to a telemetry endpoint designated by Licensor within 24 hours of the interaction."
 
-**Now (Phase 2):** API key authentication. SPUR issues keys to AI platforms. Simple, proven, works today. Every event is tied to a known platform. This is what the [OpenAttribution reference server](https://github.com/openattribution-org/telemetry/tree/main/server) already supports.
-
-**Later (Phase 4):** [AIMS](https://github.com/openattribution-org/aims)-based agent identity. Decentralised Identifiers (`did:aims:web:openai.com:chatgpt`) for cryptographic verification. More robust, but the spec is earlier stage and AI platforms aren't ready for it yet.
-
-**Cloudflare integration:** For bot identification at the crawl layer (before licensing), leverage [Cloudflare's bot management](https://www.cloudflare.com/application-services/products/bot-management/) and Content Signals. This runs alongside telemetry, not instead of it - Content Signals express what's allowed, telemetry measures what happened.
-
-**Deliverable:** API key auth on SPUR endpoint. AIMS roadmap document for later phases.
+Template for member review. Members adapt for their own agreements.
 
 ---
 
-## Phase 3: Adoption
+## Phase 2: Agent adoption
 
-**Goal:** Multiple publishers receiving telemetry. At least one AI platform emitting it.
+**Goal:** Demand-side first. Get AI agents emitting telemetry. Proof of concept with one agent, one publisher.
 
-### 3.1 Member onboarding
+### 2.1 Guardian integration (proof of concept)
 
-Roll out the telemetry endpoint to all five founding members:
+Guardian is the natural first target: only SPUR member with RSL, has a structured [Open Platform API](https://open-platform.theguardian.com/), already has deals with Google and OpenAI.
 
-1. **Domain registration** - Each member registers their content domains (e.g., bbc.co.uk, bbc.com, theguardian.com, ft.com, news.sky.com, telegraph.co.uk)
-2. **Dashboard access** - Each member gets a login to view their content usage data
-3. **Licensing clause adoption** - Each member includes the telemetry requirement in their next AI platform negotiation
+1. Guardian content accessible via their API
+2. AI agent retrieves Guardian content -> emits `content_retrieved`
+3. AI agent cites Guardian content -> emits `content_cited`
+4. Guardian sees usage data via the SPUR endpoint
 
-### 3.2 AI platform engagement
+One publisher, one agent, real telemetry flowing end-to-end.
 
-Approach AI platforms with the SPUR telemetry requirement. The value proposition for them:
+### 2.2 Agent-side integration
 
-- **Compliance proof** - Demonstrate they're using content within licence terms
-- **Reduced legal risk** - Transparent usage data reduces copyright exposure
-- **Standardised** - One integration covers all SPUR members (and future adopters)
-- **Lightweight** - Two event types, minimal data, [well-documented SDK](https://github.com/openattribution-org/telemetry)
+The path of least resistance is agents, not platforms. An independent AI agent (MCP tool, RAG pipeline, agentic app) can adopt the [TypeScript](https://www.npmjs.com/package/@openattribution/telemetry) or [Python](https://pypi.org/project/openattribution-telemetry/) SDK in a few lines. No platform-level buy-in required.
 
-**Existing deal landscape** ([Press Gazette](https://pressgazette.co.uk/news/uk-news-giants-form-nato-for-news-group-to-defend-against-ai/)): Guardian and FT already have deals with both Google (AI display rights) and OpenAI. BBC and Telegraph do not. Sky News status unclear. This means some members already have relationships where telemetry requirements could be added to existing agreements, while others would introduce it in new negotiations.
+Target: get one or more agents emitting telemetry against SPUR member content as a working demo. This proves the loop works before asking anything of Google or OpenAI.
 
-Target platforms (in order of likely engagement):
-1. **Microsoft/Bing** - Already building [content marketplace](https://digiday.com/media/the-case-for-and-against-publisher-content-marketplaces/), most aligned incentives
-2. **Anthropic** - Positioning as responsible AI, telemetry fits their brand
-3. **Perplexity** - Already facing publisher backlash, compliance is damage control
-4. **OpenAI** - Largest user, but least likely to voluntarily comply without pressure
-5. **Google** - Under [CMA scrutiny](https://www.gov.uk/cma-cases/google-search-generative-experience) for AI Overviews, regulatory pressure may help
+### 2.3 API key authentication
 
-### 3.3 RSL integration
+Simple, proven, works today. SPUR issues keys to agents and platforms. Every event tied to a known emitter. [AIMS](https://github.com/openattribution-org/aims)-based cryptographic identity comes later (Phase 4).
+
+---
+
+## Phase 3: Marketplace adoption
+
+**Goal:** Telemetry becomes a condition in marketplace and licensing deals. Multiple publishers receiving data.
+
+### 3.1 Marketplace integration
+
+Telemetry as a standard condition in marketplace participation:
+
+- **Microsoft PCM** - most aligned. Already supports bring-your-own-licence. Telemetry as a PCM requirement is the forcing function.
+- **RSL Collective** - nonprofit collective licensing platform. Telemetry verifies that pay-per-use royalties reflect actual usage.
+- **ProRata** - 750+ publications. Proprietary attribution could adopt OA Telemetry as an open verification layer.
+- **TollBit** - 5,750+ publishers. Scraping volume data complements inference-time telemetry.
+
+### 3.2 RSL integration
 
 For members who adopt [RSL](https://rslstandard.org/rsl), telemetry and licensing terms reinforce each other:
 
@@ -175,64 +124,58 @@ For members who adopt [RSL](https://rslstandard.org/rsl), telemetry and licensin
 - Telemetry measures what actually happened (`content_retrieved`, `content_cited`)
 - Mismatch = licence violation, with evidence
 
-[PolicyCheck](https://github.com/openattribution-org/policycheck) can verify RSL is correctly deployed. The telemetry endpoint can cross-reference events against RSL terms to flag non-compliance automatically.
+[PolicyCheck](https://github.com/openattribution-org/policycheck) can cross-reference events against RSL terms to flag non-compliance automatically. [1,500+ organisations already endorse RSL](https://pressgazette.co.uk/news/uk-news-giants-form-nato-for-news-group-to-defend-against-ai/).
 
-Note: [1,500+ organisations already endorse RSL](https://pressgazette.co.uk/news/uk-news-giants-form-nato-for-news-group-to-defend-against-ai/) including Yahoo, Reddit, Medium, Ziff Davis, BuzzFeed, USA Today, and Vox Media. SPUR members adopting RSL would join an existing critical mass, not start from scratch.
+### 3.3 Full member onboarding
 
-**Deliverable:** RSL deployment guide for SPUR members. Automated compliance alerting on the telemetry endpoint.
+All five founding members with dashboard access, licensing clauses adopted, telemetry flowing from at least one marketplace or agent integration per member.
 
 ---
 
-## Phase 4: Scale
+## Phase 4: AI platforms at scale
 
-**Goal:** SPUR telemetry becomes an industry expectation, not just a coalition requirement.
+**Goal:** Major AI platforms emitting telemetry. Dashboards, analytics, expanded event types.
 
-### 4.1 Expanded event types
+### 4.1 Platform engagement
 
-Once the foundation is proven, extend beyond retrieval + citation:
+Target platforms (in order of likely engagement):
+1. **Microsoft/Bing** - Already building [content marketplace](https://digiday.com/media/the-case-for-and-against-publisher-content-marketplaces/), most aligned
+2. **Anthropic** - Positioning as responsible AI, telemetry fits their brand
+3. **Perplexity** - Facing publisher backlash, compliance is damage control
+4. **OpenAI** - Largest user, least likely to voluntarily comply without pressure
+5. **Google** - Under [CMA scrutiny](https://www.gov.uk/cma-cases/google-search-generative-experience) for AI Overviews, regulatory pressure may help
 
-| Event | Purpose | When to add |
-|-------|---------|------------|
-| `content_displayed` | Distinguish retrieval from actual display | When AI platforms support it |
-| `content_engaged` | User clicked, expanded, or interacted with content | When in-chat content rendering is common |
-| Commerce events (`product_viewed`, `checkout_completed`) | Attribution to revenue | When commerce-focused publishers join |
+By this phase, the ecosystem already runs on telemetry via agents and marketplaces. Platforms adopt because they have to, not because they want to.
 
-These are already specified in [OpenAttribution Telemetry v0.4](https://github.com/openattribution-org/telemetry/blob/main/SPECIFICATION.md). Adding them is a configuration change, not a spec change.
+### 4.2 Publisher dashboards and analytics
 
-### 4.2 AIMS agent identity
+- Per-publisher dashboards showing retrieval and citation volumes over time
+- Cross-platform comparison (which platforms use your content most?)
+- Retrieval-to-citation ratio (high retrieval, low citation = content used but not credited)
+- Attribution computation for licensing negotiations
+- Export and API access for member analytics teams
 
-Move from API key auth to [AIMS](https://github.com/openattribution-org/aims) Decentralised Identifiers:
+### 4.3 Expanded event types
+
+| Event | Purpose |
+|-------|---------|
+| `content_displayed` | Distinguish retrieval from actual display |
+| `content_engaged` | User clicked, expanded, or interacted with content |
+| Commerce events (`product_viewed`, `checkout_completed`) | Attribution to revenue |
+
+Already specified in [OpenAttribution Telemetry v0.4](https://github.com/openattribution-org/telemetry/blob/main/SPECIFICATION.md). Adding them is a configuration change.
+
+### 4.4 AIMS agent identity
+
+Move from API keys to [AIMS](https://github.com/openattribution-org/aims) Decentralised Identifiers:
 
 - AI platforms publish manifests at `/.well-known/aims/`
-- Manifests declare training data provenance, licensed sources, redistribution policies
-- SPUR endpoint verifies identity cryptographically
-- Agent-to-agent trust chains enable attribution across multi-hop agent pipelines
+- Cryptographic verification of which agent accessed which content
+- Agent-to-agent trust chains for multi-hop pipelines
 
-This is the long-term answer to "how do we know who's using our content?" but requires AI platform adoption of AIMS, which is a standards adoption challenge.
+### 4.5 International expansion
 
-### 4.3 Attribution computation
-
-With telemetry flowing, compute content contribution scores:
-
-- Which content is retrieved most?
-- Which content is cited most?
-- What's the ratio of retrieval to citation? (high retrieval, low citation = content is being used but not credited)
-- Cross-publisher comparison (anonymised) - are some publishers' content used more than credited?
-
-This data gives SPUR members leverage in licensing negotiations. "Your platform retrieved our content 2.3M times last month and cited it 400K times. Here's what fair compensation looks like."
-
-Attribution algorithms are left to implementers (per the [OpenAttribution spec](https://github.com/openattribution-org/telemetry/blob/main/SPECIFICATION.md#13-non-goals)). SPUR can recommend approaches without mandating them.
-
-### 4.4 International expansion
-
-SPUR's stated ambition is global. The technical stack supports this:
-
-- Telemetry spec is language/region agnostic
-- PolicyCheck handles EU-specific standards ([TDMRep](https://www.w3.org/community/reports/tdmrep/CG-FINAL-tdmrep-20240202/)) alongside global ones (robots.txt, RSL)
-- [EU AI Act](https://artificialintelligenceact.eu/) (full applicability August 2026) creates regulatory tailwind
-- Multi-tenant endpoint can onboard publishers from any country
-
-Target markets for expansion: US (NYT, Washington Post, etc.), EU (GDPR + AI Act alignment), Australia (News Corp, already litigious on AI).
+Telemetry spec is language/region agnostic. [EU AI Act](https://artificialintelligenceact.eu/) (full applicability August 2026) creates regulatory tailwind. Target markets: US (NYT, Washington Post), EU (GDPR + AI Act), Australia (News Corp).
 
 ---
 
@@ -254,12 +197,12 @@ How the standards ecosystem fits together:
 
 | Risk | Likelihood | Impact | Mitigation |
 |------|-----------|--------|------------|
-| AI platforms refuse to emit telemetry | High | Critical | Regulatory pressure (CMA, EU AI Act), licensing leverage (no telemetry = no licence) |
+| AI platforms refuse to emit telemetry | High | Critical | Don't start with platforms. Build adoption through agents and marketplaces first. Platforms adopt when the ecosystem already runs on it. Regulatory pressure (CMA, EU AI Act) and licensing leverage help. |
 | Members disagree on privacy levels | Medium | Medium | Default to `minimal` (URLs + timestamps only). Members can negotiate higher levels individually. |
-| Too complex, too slow to ship | Medium | High | Phase 1 is deliberately minimal. Two event types. API keys. No fancy crypto. Ship, then iterate. |
+| Too complex, too slow to ship | Medium | High | Phase 1 is nearly built. Two event types. API keys. No fancy crypto. Ship, then iterate. |
 | Competing standards fragment the space | Low | Medium | OpenAttribution is complementary to RSL/CoMP/Content Signals, not competing. The telemetry gap is unique. |
-| Google doesn't engage | High | Medium | Google is under CMA investigation for AI Overviews. Regulatory pressure is building separately. Focus on willing platforms first. |
-| Attribution computation is contested | Medium | Medium | Spec deliberately doesn't mandate algorithms. SPUR can recommend approaches. Let the data speak. |
+| Marketplaces don't adopt telemetry as a condition | Medium | High | Microsoft PCM is most aligned. RSL Collective's pay-per-use model needs usage verification by definition. Start where incentives align. |
+| Google doesn't engage | High | Medium | Google is under CMA investigation for AI Overviews. Regulatory pressure is building separately. Google is Phase 4, not Phase 2. |
 
 ---
 
@@ -273,7 +216,7 @@ How the standards ecosystem fits together:
 | Telemetry endpoint hosting | Fly.io ([`oa-telemetry-server`](https://github.com/openattribution-org/oa-telemetry-server)) | Deployed |
 | Publisher dashboard | Three-pane demo in `spur/demo/` | In progress |
 | Legal clause template | SPUR legal working group | To draft |
-| AI platform engagement | SPUR coalition leverage | Phase 3 |
+| AI platform engagement | SPUR coalition leverage | Phase 3-4 |
 | Alex's time (tech lead) | David/Dominic discussing engagement structure | In progress |
 
 ---
@@ -282,10 +225,10 @@ How the standards ecosystem fits together:
 
 | Phase | Key milestone |
 |-------|--------------|
-| **1. Foundation** | Member audit complete. SPUR Telemetry Profile v0.1 published. Licensing clause template drafted. |
-| **2. Infrastructure** | SPUR telemetry endpoint live. Guardian integration demo working. API key auth operational. |
-| **3. Adoption** | All five members onboarded. At least one AI platform emitting telemetry. RSL integration guide published. |
-| **4. Scale** | Expanded event types. AIMS identity piloted. Attribution computation. International outreach. |
+| **1. Platform** | SPUR members sign up, claim web properties. Telemetry endpoint live. Telemetry profile and licensing clause ready. Nearly built. |
+| **2. Agent adoption** | Demand-side first. PoC with one agent + one publisher (Guardian). Prove the loop works. |
+| **3. Marketplace adoption** | Telemetry as a condition in marketplace deals (PCM, RSL Collective, ProRata). All five members onboarded. |
+| **4. AI platforms at scale** | Major platforms emitting. Dashboards, analytics, expanded events, AIMS identity, international. |
 
 ---
 

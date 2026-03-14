@@ -145,10 +145,10 @@ Guardian is the natural first integration target:
 
 ### Phase roadmap
 
-- **Phase 1 - Foundation:** Member compliance audit **(1.1 DONE)**, telemetry profile v0.1, licensing clause template
-- **Phase 2 - Infrastructure:** OA telemetry server deployed **(2.1 DONE)**, Guardian demo **(IN PROGRESS)**, API key auth **(DONE)**
-- **Phase 3 - Adoption:** Member onboarding, platform engagement (Microsoft, Anthropic, Perplexity, OpenAI, Google)
-- **Phase 4 - Scale:** Expanded events, AIMS identity, attribution computation, international
+- **Phase 1 - Platform:** Publisher sign-up, domain claiming, telemetry endpoint, API keys, telemetry profile, licensing clause. Compliance audit **(DONE)**, server **(DEPLOYED)**, Guardian demo **(IN PROGRESS)**.
+- **Phase 2 - Agent adoption:** Demand-side first. PoC with one agent + one publisher (Guardian). Prove the telemetry loop works.
+- **Phase 3 - Marketplace adoption:** Telemetry as a condition in marketplace deals (PCM, RSL Collective, ProRata). All five members onboarded.
+- **Phase 4 - AI platforms at scale:** Major platforms emitting. Dashboards, analytics, expanded events, AIMS identity, international.
 
 ### OpenAttribution assets (already built)
 

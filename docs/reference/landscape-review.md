@@ -80,7 +80,7 @@ How publishers monetise AI access to their content. Updated from MVFP November 2
 
 | Standard / Platform | Owner | Model | Scope | Status (Feb 2026) |
 |---------------------|-------|-------|-------|-------------------|
-| [RSL 1.0](https://rslstandard.org/rsl) | RSL Collective (nonprofit) | Open standard | Inference, retrieval, training | **Live and rolling out.** 1,500+ publishers, brands, and technology companies endorse. XML-based machine-readable terms. 8 payment types. Crawler Authorization Protocol (CAP) + Open License Protocol (OLP). Infrastructure support from Cloudflare, Akamai, Fastly. [Supertab](https://www.supertab.co/) offering RSL as a managed service (deployment, hosting, compliance monitoring). |
+| [RSL 1.0](https://rslstandard.org/rsl) | RSL (open standard) | Open standard | Inference, retrieval, training | **Live and rolling out.** 1,500+ endorsements. XML-based machine-readable terms. 8 payment types. Crawler Authorization Protocol (CAP) + Open License Protocol (OLP). Infrastructure support from Cloudflare, Akamai, Fastly. [Supertab](https://www.supertab.co/) offering RSL as a managed service (deployment, hosting, compliance monitoring). Note: the [RSL Collective](https://rslcollective.org/) is a separate nonprofit licensing platform that uses the RSL standard to operate a pay-per-use royalty system - see Content Marketplaces section. |
 | [IAB CoMP](https://iabtechlab.com/content-monetization-protocols/) | IAB Tech Lab | Open standard (draft) | Inference, retrieval, training | **Working group formed August 2025.** 80+ executives. Participants include Dotdash Meredith, Bertelsmann, Cloudflare, AWS, TollBit, Dappier, ProRata.ai, Meta, Google. Three pillars: bot traffic blocking, content discovery (Content Access Rules, llms.txt), monetisation APIs (Cost Per Crawl, LLM Ingest API). **No published specification yet.** Also released draft "AI Accountability for Publishers Act" (Feb 2026) based on unjust enrichment theory. |
 | [Peek-Then-Pay](https://peekthenpay.org/) | FetchRight (VC-backed) | Open standard (CC0) | Inference | **Early access.** Five-step flow: discovery (`/.well-known/peek.json`) -> preview -> license (JWT) -> access (edge-enforced) -> report. Publishers serve pre-chunked content. MCP-native. No public adoption numbers. |
 
@@ -149,6 +149,7 @@ Who is building exchanges where AI platforms can license publisher content. Sign
 | **ProRata.ai** | ProRata (VC-backed) | 50/50 revenue share | 750+ publications (Atlantic, Guardian, Sky News, Fortune, Vox, Daily Mail, Time, Boston Globe). News/Media Alliance partnership. | **Live.** Gist Answers consumer chatbot. Gist Ads for native advertising. IAB CoMP working group participant. $75M raised. |
 | **TollBit** | TollBit (VC-backed) | Pay-per-scrape / pay-per-use | 5,750+ publishers (via Freestar pubOS integration). Local Media Consortium (5,000 local news members). | **Live.** Bot paywall / access control. IAB CoMP participant. Data point: Digital Trends received 4.1M bot scrapes in one week, referring only 4,200 human visitors. |
 | **Cloudflare Pay Per Crawl** | Cloudflare | Pay-per-crawl | Any Cloudflare customer (~20% of web) | **Pilot.** Publishers set per-request price. HTTP 402 responses. Cloudflare as Merchant of Record. Zero-code adoption. Widest potential reach of any marketplace. |
+| **[RSL Collective](https://rslcollective.org/)** | RSL Collective (nonprofit) | Pay-per-use royalties | Reddit, Vox Media, BuzzFeed, Stack Overflow and others listed as supporters. | **Live.** Nonprofit licensing platform built on the RSL standard. Pay-per-use model: AI companies compensate content owners each time their work generates an AI output. Collective bargaining for publishers. "Creator Bill of Rights" framing (control, representation, royalties). Similar model to ProRata but nonprofit and built on open standard infrastructure rather than proprietary attribution. |
 | **Dappier** | Dappier (VC-backed) | AI content marketplace + agentic ads | Early stage | **Live.** Data syndication + native ads in AI conversations. IAB CoMP participant. |
 
 ### Assessment
@@ -280,7 +281,8 @@ How the standards ecosystem fits together:
 ## References
 
 ### Standards
-- [RSL 1.0](https://rslstandard.org/rsl) - Really Simple Licensing
+- [RSL 1.0](https://rslstandard.org/rsl) - Really Simple Licensing (open standard)
+- [RSL Collective](https://rslcollective.org/) - nonprofit collective licensing platform (ASCAP/BMI model for web content)
 - [IAB CoMP](https://iabtechlab.com/content-monetization-protocols/) - Content Monetization Protocols
 - [Cloudflare Content Signals](https://blog.cloudflare.com/content-signals-policy)
 - [W3C TDMRep](https://www.w3.org/community/reports/tdmrep/CG-FINAL-tdmrep-20240202/)
