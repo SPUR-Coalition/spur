@@ -10,6 +10,7 @@ __pycache__/
 venv/
 dist/
 build/
+.ruff_cache/
 
 # Node
 node_modules/
@@ -19,7 +20,7 @@ node_modules/
 .vercel/
 
 # Claude Code
-.claude/settings.local.json
+.claude/
 
 # Environment
 .env
