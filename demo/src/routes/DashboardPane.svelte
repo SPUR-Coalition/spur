@@ -1,8 +1,19 @@
 <script lang="ts">
-	import type { PublisherSummary, PublisherEvent, PublisherUrlMetric, Paginated, AgentBreakdown } from '$lib/types';
+	import type { PublisherSummary, PublisherEvent, PublisherUrlMetric, Paginated } from '$lib/types';
 	import { dashboardRefreshTrigger } from '$lib/stores';
 	import { onMount } from 'svelte';
 
+	interface PublisherTab {
+		id: string;
+		label: string;
+	}
+
+	const publishers: PublisherTab[] = [
+		{ id: 'guardian', label: 'The Guardian' },
+		{ id: 'telegraph', label: 'Telegraph' }
+	];
+
+	let activePublisher = $state('guardian');
 	let summary: PublisherSummary | null = $state(null);
 	let recentEvents: PublisherEvent[] = $state([]);
 	let topUrls: PublisherUrlMetric[] = $state([]);
@@ -12,20 +23,29 @@
 	async function fetchData() {
 		try {
 			error = null;
+			loading = true;
+			const pub = activePublisher;
 			const [summaryRes, eventsRes, urlsRes] = await Promise.all([
-				fetch('/api/publisher?view=summary'),
-				fetch('/api/publisher?view=events&limit=10'),
-				fetch('/api/publisher?view=urls&limit=10')
+				fetch(`/api/publisher?view=summary&publisher=${pub}`),
+				fetch(`/api/publisher?view=events&limit=10&publisher=${pub}`),
+				fetch(`/api/publisher?view=urls&limit=10&publisher=${pub}`)
 			]);
 
 			if (summaryRes.ok) summary = await summaryRes.json();
+			else summary = null;
+
 			if (eventsRes.ok) {
 				const data: Paginated<PublisherEvent> = await eventsRes.json();
 				recentEvents = data.items;
+			} else {
+				recentEvents = [];
 			}
+
 			if (urlsRes.ok) {
 				const data: Paginated<PublisherUrlMetric> = await urlsRes.json();
 				topUrls = data.items;
+			} else {
+				topUrls = [];
 			}
 		} catch (err) {
 			error = String(err);
@@ -39,9 +59,13 @@
 	});
 
 	dashboardRefreshTrigger.subscribe(() => {
-		// Small delay to let the OA server process events
 		setTimeout(fetchData, 500);
 	});
+
+	function switchPublisher(pubId: string) {
+		activePublisher = pubId;
+		fetchData();
+	}
 
 	function shortUrl(url: string): string {
 		try {
@@ -62,13 +86,24 @@
 </script>
 
 <div class="dashboard-container">
+	<div class="tab-bar">
+		{#each publishers as pub}
+			<button
+				class="tab"
+				class:active={activePublisher === pub.id}
+				onclick={() => switchPublisher(pub.id)}
+			>
+				{pub.label}
+			</button>
+		{/each}
+	</div>
+
 	{#if loading}
 		<div class="loading">Loading publisher data...</div>
 	{:else if error}
 		<div class="error">{error}</div>
 	{:else}
 		<div class="content">
-			<!-- Summary cards -->
 			{#if summary}
 				<div class="cards">
 					<div class="card">
@@ -88,7 +123,6 @@
 				</div>
 			{/if}
 
-			<!-- Agents -->
 			{#if summary?.agents && summary.agents.length > 0}
 				<div class="section">
 					<div class="section-title">Agents</div>
@@ -106,7 +140,6 @@
 				</div>
 			{/if}
 
-			<!-- Top URLs -->
 			{#if topUrls.length > 0}
 				<div class="section">
 					<div class="section-title">Top URLs</div>
@@ -126,7 +159,6 @@
 				</div>
 			{/if}
 
-			<!-- Recent events -->
 			{#if recentEvents.length > 0}
 				<div class="section">
 					<div class="section-title">Recent events</div>
@@ -149,7 +181,7 @@
 
 			{#if !summary?.total_events}
 				<div class="no-data">
-					<p>No telemetry data yet.</p>
+					<p>No telemetry data yet for this publisher.</p>
 					<p class="hint">Use the chat to generate content_retrieved and content_cited events.</p>
 				</div>
 			{/if}
@@ -162,8 +194,38 @@
 		display: flex;
 		flex-direction: column;
 		height: 100%;
-		overflow-y: auto;
-		padding: 0.75rem;
+		overflow: hidden;
+	}
+
+	.tab-bar {
+		display: flex;
+		gap: 0;
+		border-bottom: 1px solid #e5e7eb;
+		background: #ffffff;
+		flex-shrink: 0;
+	}
+
+	.tab {
+		flex: 1;
+		padding: 0.45rem 0.75rem;
+		font-size: 0.65rem;
+		font-weight: 600;
+		letter-spacing: 0.03em;
+		color: #9ca3af;
+		background: none;
+		border: none;
+		border-bottom: 2px solid transparent;
+		cursor: pointer;
+		transition: color 0.15s, border-color 0.15s;
+	}
+
+	.tab:hover {
+		color: #6b7280;
+	}
+
+	.tab.active {
+		color: #7c3aed;
+		border-bottom-color: #7c3aed;
 	}
 
 	.loading, .error, .no-data {
@@ -171,7 +233,7 @@
 		flex-direction: column;
 		align-items: center;
 		justify-content: center;
-		height: 100%;
+		flex: 1;
 		color: #9ca3af;
 		font-size: 0.8rem;
 		text-align: center;
@@ -190,6 +252,8 @@
 		display: flex;
 		flex-direction: column;
 		gap: 1rem;
+		overflow-y: auto;
+		padding: 0.75rem;
 	}
 
 	.cards {

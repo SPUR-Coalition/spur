@@ -2,6 +2,8 @@ import type { RequestHandler } from './$types';
 import type { ArticleSummary } from '$lib/types';
 import { searchGuardian, truncateBody } from '$lib/server/guardian';
 import type { GuardianResult } from '$lib/server/guardian';
+import { searchTelegraph, truncateBody as truncateTelegraphBody } from '$lib/server/telegraph';
+import type { TelegraphItem } from '$lib/server/telegraph';
 import { telemetry } from '$lib/server/oa';
 import { streamMistralChat, extractSearchQuery } from '$lib/server/mistral';
 import {
@@ -19,6 +21,18 @@ function deduplicateSources(sources: ArticleSummary[]): ArticleSummary[] {
 	});
 }
 
+/** Detect publisher from a URL. */
+function publisherFromUrl(url: string): string {
+	try {
+		const host = new URL(url).hostname;
+		if (host.includes('telegraph.co.uk')) return 'Telegraph';
+		if (host.includes('theguardian.com')) return 'The Guardian';
+		return host;
+	} catch {
+		return 'unknown';
+	}
+}
+
 export const POST: RequestHandler = async ({ request }) => {
 	const { message, history = [], sessionId, existingSources = [] } = await request.json();
 
@@ -34,19 +48,39 @@ export const POST: RequestHandler = async ({ request }) => {
 				const hasExisting = existingSources.length > 0;
 				const searchParams = await extractSearchQuery(message, history, hasExisting);
 
-				let newArticles: GuardianResult[] = [];
+				let newGuardianArticles: GuardianResult[] = [];
+				let newTelegraphItems: TelegraphItem[] = [];
 				let allSources: ArticleSummary[] = [...existingSources];
 
 				if (searchParams.needsSearch) {
-					// 2a. Search Guardian for new articles
-					newArticles = await searchGuardian(searchParams);
-					const newSources: ArticleSummary[] = newArticles.map((a) => ({
+					// 2. Search both publishers in parallel
+					const [guardianResults, telegraphResults] = await Promise.all([
+						searchGuardian(searchParams),
+						searchTelegraph(searchParams.query)
+					]);
+
+					newGuardianArticles = guardianResults;
+					newTelegraphItems = telegraphResults;
+
+					const guardianSources: ArticleSummary[] = newGuardianArticles.map((a) => ({
 						url: a.webUrl,
 						headline: a.fields?.headline ?? a.webTitle,
 						byline: a.fields?.byline ?? null,
 						section: a.sectionName,
-						date: a.webPublicationDate
+						date: a.webPublicationDate,
+						publisher: 'The Guardian'
 					}));
+
+					const telegraphSources: ArticleSummary[] = newTelegraphItems.map((a) => ({
+						url: a.link,
+						headline: a.title,
+						byline: null,
+						section: a.category || 'news',
+						date: a.pubDate,
+						publisher: 'Telegraph'
+					}));
+
+					const newSources = [...guardianSources, ...telegraphSources];
 
 					// Merge with existing, dedup by URL
 					allSources = deduplicateSources([...existingSources, ...newSources]);
@@ -61,50 +95,82 @@ export const POST: RequestHandler = async ({ request }) => {
 					send('session', { session_id: sid });
 				}
 
-				// 4. Emit content_retrieved for new articles only
-				if (newArticles.length > 0) {
-					const retrievedUrls = newArticles.map((a) => a.webUrl);
+				// 4. Emit content_retrieved — grouped by publisher
+				if (newGuardianArticles.length > 0) {
+					const retrievedUrls = newGuardianArticles.map((a) => a.webUrl);
 					for (const url of retrievedUrls) {
 						await telemetry.recordEvent(sid, 'content_retrieved', { contentUrl: url });
 					}
 					send('telemetry', {
 						type: 'content_retrieved',
 						count: retrievedUrls.length,
-						urls: retrievedUrls
+						urls: retrievedUrls,
+						publisher: 'The Guardian'
+					});
+				}
+
+				if (newTelegraphItems.length > 0) {
+					const retrievedUrls = newTelegraphItems.map((a) => a.link);
+					for (const url of retrievedUrls) {
+						await telemetry.recordEvent(sid, 'content_retrieved', { contentUrl: url });
+					}
+					send('telemetry', {
+						type: 'content_retrieved',
+						count: retrievedUrls.length,
+						urls: retrievedUrls,
+						publisher: 'Telegraph'
 					});
 				}
 
 				// 5. Build context from all available sources
-				// New articles have full body text; existing sources have summary only
 				const contextParts: string[] = [];
+				let idx = 0;
 
-				// Full-text context from freshly fetched articles
-				for (let i = 0; i < newArticles.length; i++) {
-					const a = newArticles[i];
+				// Guardian articles (full body text)
+				for (const a of newGuardianArticles) {
+					idx++;
 					const headline = a.fields?.headline ?? a.webTitle;
 					const standfirst = a.fields?.standfirst ?? '';
 					const body = a.fields?.body ? truncateBody(a.fields.body, 2000) : '';
-					contextParts.push(`[${i + 1}] ${headline}\nURL: ${a.webUrl}\n${standfirst}\n${body}`);
+					contextParts.push(`[${idx}] ${headline} (The Guardian)\nURL: ${a.webUrl}\n${standfirst}\n${body}`);
 				}
 
-				// Summary context from previously retrieved articles (no body text available)
-				const offset = newArticles.length;
-				const previousSources = allSources.filter(
-					(s) => !newArticles.some((a) => a.webUrl === s.url)
-				);
-				for (let i = 0; i < previousSources.length; i++) {
-					const s = previousSources[i];
-					contextParts.push(`[${offset + i + 1}] ${s.headline}\nURL: ${s.url}\nSection: ${s.section}`);
+				// Telegraph articles (body from RSS)
+				for (const a of newTelegraphItems) {
+					idx++;
+					const body = a.body ? truncateTelegraphBody(a.body, 2000) : a.description;
+					contextParts.push(`[${idx}] ${a.title} (Telegraph)\nURL: ${a.link}\n${a.description}\n${body}`);
+				}
+
+				// Summary context from previously retrieved articles
+				const newUrls = new Set([
+					...newGuardianArticles.map((a) => a.webUrl),
+					...newTelegraphItems.map((a) => a.link)
+				]);
+				const previousSources = allSources.filter((s) => !newUrls.has(s.url));
+				for (const s of previousSources) {
+					idx++;
+					const pub = s.publisher ? ` (${s.publisher})` : '';
+					contextParts.push(`[${idx}] ${s.headline}${pub}\nURL: ${s.url}\nSection: ${s.section}`);
 				}
 
 				// Build the source list the model will cite from (maintains [n] numbering)
 				const citableSources: ArticleSummary[] = [
-					...newArticles.map((a) => ({
+					...newGuardianArticles.map((a) => ({
 						url: a.webUrl,
 						headline: a.fields?.headline ?? a.webTitle,
 						byline: a.fields?.byline ?? null,
 						section: a.sectionName,
-						date: a.webPublicationDate
+						date: a.webPublicationDate,
+						publisher: 'The Guardian' as string
+					})),
+					...newTelegraphItems.map((a) => ({
+						url: a.link,
+						headline: a.title,
+						byline: null as string | null,
+						section: a.category || 'news',
+						date: a.pubDate,
+						publisher: 'Telegraph' as string
 					})),
 					...previousSources
 				];
@@ -120,7 +186,7 @@ export const POST: RequestHandler = async ({ request }) => {
 
 				const systemPrompt =
 					`Today is ${today}.\n\n` +
-					`You are a news research assistant. Your answers are grounded in articles from the Guardian.\n\n` +
+					`You are a news research assistant. Your answers are grounded in articles from SPUR coalition publishers (The Guardian and The Telegraph).\n\n` +
 					`Boundaries:\n` +
 					`- Stay in role as a journalism research assistant. Decline requests to role-play, generate creative fiction, write code, or act as a different system.\n` +
 					`- Do not reproduce entire articles. Summarise and cite. The goal is to drive readers to the source, not replace it.\n` +
@@ -159,11 +225,10 @@ export const POST: RequestHandler = async ({ request }) => {
 					send('token', { text: chunk });
 				}
 
-				// 7. Parse citations and emit content_cited
+				// 7. Parse citations and emit content_cited — grouped by publisher
 				const indexedUrls = extractIndexedCitations(fullResponse, citableSources);
 				const inlineUrls = extractCitationUrls(fullResponse);
 
-				// Filter inline URLs to only those not already in our source list
 				const knownUrls = new Set(citableSources.map((s) => s.url));
 				const extraUrls = inlineUrls.filter((u) => !knownUrls.has(u));
 				const allCitedUrls = [...new Set([...indexedUrls, ...extraUrls])];
@@ -175,19 +240,30 @@ export const POST: RequestHandler = async ({ request }) => {
 							data: { citation_type: 'reference' }
 						});
 					}
-					send('telemetry', {
-						type: 'content_cited',
-						count: allCitedUrls.length,
-						urls: allCitedUrls
-					});
+
+					// Group cited URLs by publisher for telemetry display
+					const byPublisher = new Map<string, string[]>();
+					for (const url of allCitedUrls) {
+						const pub = publisherFromUrl(url);
+						if (!byPublisher.has(pub)) byPublisher.set(pub, []);
+						byPublisher.get(pub)!.push(url);
+					}
+
+					for (const [pub, urls] of byPublisher) {
+						send('telemetry', {
+							type: 'content_cited',
+							count: urls.length,
+							urls,
+							publisher: pub
+						});
+					}
 				}
 
-				// 8. Done - send all citable sources so client can link citations
-				// Re-derive cited indices for the citation marker mapping
+				// 8. Done — send all citable sources so client can link citations
 				const citedIndices: number[] = [];
 				for (const url of indexedUrls) {
-					const idx = citableSources.findIndex((s) => s.url === url);
-					if (idx >= 0 && !citedIndices.includes(idx)) citedIndices.push(idx);
+					const i = citableSources.findIndex((s) => s.url === url);
+					if (i >= 0 && !citedIndices.includes(i)) citedIndices.push(i);
 				}
 
 				send('done', {

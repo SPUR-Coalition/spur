@@ -35,6 +35,13 @@
 			second: '2-digit'
 		});
 	}
+
+	function publisherDomain(publisher: string | undefined): string {
+		if (!publisher) return '';
+		if (publisher === 'The Guardian') return 'theguardian.com';
+		if (publisher === 'Telegraph') return 'telegraph.co.uk';
+		return publisher;
+	}
 </script>
 
 <div class="telemetry-container">
@@ -51,7 +58,7 @@
 		{#if events.length === 0}
 			<div class="empty">
 				<p>No telemetry events yet.</p>
-				<p class="hint">Events appear here as the chat retrieves and cites Guardian content.</p>
+				<p class="hint">Events appear here as the chat retrieves and cites content from SPUR publishers.</p>
 			</div>
 		{/if}
 
@@ -61,9 +68,20 @@
 					<span class="badge" class:badge-retrieved={event.type === 'content_retrieved'} class:badge-cited={event.type === 'content_cited'} class:badge-engaged={event.type === 'content_engaged'}>
 						{event.type === 'content_retrieved' ? 'RETRIEVED' : event.type === 'content_cited' ? 'CITED' : 'ENGAGED'}
 					</span>
+					{#if event.publisher}
+						<span class="publisher-badge" class:publisher-guardian={event.publisher === 'The Guardian'} class:publisher-telegraph={event.publisher === 'Telegraph'}>
+							{event.publisher}
+						</span>
+					{/if}
 					<span class="count">{event.count} URL{event.count !== 1 ? 's' : ''}</span>
 					<span class="time">{formatTime(event.timestamp)}</span>
 				</div>
+				{#if event.publisher}
+					<div class="route-line">
+						<span class="route-arrow">-></span>
+						<span class="route-dest">{publisherDomain(event.publisher)}</span>
+					</div>
+				{/if}
 				<div class="event-urls">
 					{#each event.urls as url}
 						<a href={url} target="_blank" rel="noopener" class="url">{shortUrl(url)}</a>
@@ -165,6 +183,42 @@
 	.badge-engaged {
 		background: #fef3c7;
 		color: #d97706;
+	}
+
+	.publisher-badge {
+		font-size: 0.55rem;
+		font-weight: 600;
+		padding: 0.1rem 0.35rem;
+		border-radius: 3px;
+		letter-spacing: 0.02em;
+	}
+
+	.publisher-guardian {
+		background: #dbeafe;
+		color: #1d4ed8;
+	}
+
+	.publisher-telegraph {
+		background: #fef3c7;
+		color: #92400e;
+	}
+
+	.route-line {
+		display: flex;
+		align-items: center;
+		gap: 0.35rem;
+		margin-bottom: 0.3rem;
+		font-size: 0.6rem;
+		font-family: 'SF Mono', 'Fira Code', monospace;
+		color: #9ca3af;
+	}
+
+	.route-arrow {
+		color: #d1d5db;
+	}
+
+	.route-dest {
+		color: #6b7280;
 	}
 
 	.count {

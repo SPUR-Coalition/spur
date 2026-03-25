@@ -6,7 +6,7 @@
 	<header>
 		<img class="logo" src="/spur-logo.png" alt="SPUR" />
 		<div class="title">Live telemetry demo</div>
-		<div class="subtitle">OpenAttribution Telemetry + Guardian content</div>
+		<div class="subtitle">OpenAttribution Telemetry + SPUR publisher content</div>
 	</header>
 	<main>
 		{@render children()}

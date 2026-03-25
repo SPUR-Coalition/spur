@@ -31,6 +31,7 @@ export interface ArticleSummary {
 	byline: string | null;
 	section: string;
 	date: string;
+	publisher?: string;
 }
 
 export interface Citation {
@@ -45,6 +46,7 @@ export interface TelemetryEvent {
 	count: number;
 	urls: string[];
 	timestamp: string;
+	publisher?: string;
 }
 
 // Publisher dashboard

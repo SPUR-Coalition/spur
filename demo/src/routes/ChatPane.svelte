@@ -25,19 +25,31 @@
 	let isStreaming = $state(false);
 	let messagesEl: HTMLDivElement;
 
-	/** Fire a content_engaged event when a Guardian link is clicked. */
+	/** Detect publisher from URL hostname. */
+	function publisherFromUrl(url: string): string | null {
+		try {
+			const host = new URL(url).hostname;
+			if (host.includes('theguardian.com')) return 'The Guardian';
+			if (host.includes('telegraph.co.uk')) return 'Telegraph';
+			return null;
+		} catch {
+			return null;
+		}
+	}
+
+	/** Fire a content_engaged event when a publisher link is clicked. */
 	function handleLinkClick(e: MouseEvent) {
 		const anchor = (e.target as HTMLElement).closest('a[href]') as HTMLAnchorElement | null;
 		if (!anchor) return;
 
 		const url = anchor.href;
-		if (!url.includes('theguardian.com')) return;
+		const publisher = publisherFromUrl(url);
+		if (!publisher) return;
 
 		let sessionId: string | null = null;
 		currentSessionId.subscribe((v) => (sessionId = v))();
 		if (!sessionId) return;
 
-		// Fire and forget - don't block navigation
 		fetch('/api/engage', {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
@@ -50,7 +62,8 @@
 				type: 'content_engaged' as const,
 				count: 1,
 				urls: [url],
-				timestamp: new Date().toISOString()
+				timestamp: new Date().toISOString(),
+				publisher
 			}
 		]);
 		dashboardRefreshTrigger.update((n) => n + 1);
@@ -186,8 +199,8 @@
 	<div class="messages" bind:this={messagesEl} onclick={handleLinkClick}>
 		{#if messages.length === 0}
 			<div class="empty">
-				<p class="empty-title">Ask about Guardian journalism</p>
-				<p class="empty-hint">Try: "What has the Guardian reported about AI regulation?"</p>
+				<p class="empty-title">Ask about news from SPUR publishers</p>
+				<p class="empty-hint">Try: "What's the latest on AI regulation?"</p>
 			</div>
 		{/if}
 
@@ -206,6 +219,9 @@
 						{#each msg.sources as source, i}
 							<a href={source.url} target="_blank" rel="noopener" class="source">
 								[{i + 1}] {source.headline}
+								{#if source.publisher}
+									<span class="source-publisher" class:source-guardian={source.publisher === 'The Guardian'} class:source-telegraph={source.publisher === 'Telegraph'}>{source.publisher}</span>
+								{/if}
 							</a>
 						{/each}
 					</div>
@@ -218,7 +234,7 @@
 		<input
 			type="text"
 			bind:value={input}
-			placeholder="Ask about Guardian content..."
+			placeholder="Ask about news..."
 			disabled={isStreaming}
 		/>
 		<button type="submit" disabled={isStreaming || !input.trim()}>Send</button>
@@ -405,6 +421,25 @@
 
 	.source:hover {
 		text-decoration: underline;
+	}
+
+	.source-publisher {
+		font-size: 0.6rem;
+		font-weight: 600;
+		padding: 0.05rem 0.3rem;
+		border-radius: 3px;
+		margin-left: 0.3rem;
+		vertical-align: middle;
+	}
+
+	.source-guardian {
+		background: #dbeafe;
+		color: #1d4ed8;
+	}
+
+	.source-telegraph {
+		background: #fef3c7;
+		color: #92400e;
 	}
 
 	.input-area {

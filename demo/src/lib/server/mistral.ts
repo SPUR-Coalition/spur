@@ -29,7 +29,7 @@ export async function extractSearchQuery(
 				{
 					role: 'system',
 					content:
-						'You are a search router for a chat assistant backed by the Guardian Content API.\n\n' +
+						'You are a search router for a chat assistant backed by multiple news publishers (The Guardian and The Telegraph).\n\n' +
 						'Given a user message and conversation history, decide:\n' +
 						'1. Whether a NEW search is needed (needs_search)\n' +
 						'2. If so, what query and optional tag to use\n\n' +
@@ -46,6 +46,7 @@ export async function extractSearchQuery(
 							? 'The conversation already has retrieved articles. Only search if the user needs NEW information.\n\n'
 							: 'No articles have been retrieved yet. A search is needed.\n\n') +
 						'Query syntax (when needs_search is true):\n' +
+						'- The query is used to search the Guardian Content API and also matched against Telegraph RSS articles.\n' +
 						'- AND, OR, NOT operators: debate AND economy\n' +
 						'- Phrase search with double quotes: "artificial intelligence"\n' +
 						'- Parentheses for grouping: AI AND (regulation OR policy)\n' +

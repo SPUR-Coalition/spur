@@ -14,7 +14,7 @@
 		<TelemetryPane />
 	</div>
 	<div class="pane dashboard">
-		<div class="pane-header">Publisher dashboard (The Guardian)</div>
+		<div class="pane-header">Publisher dashboard</div>
 		<DashboardPane />
 	</div>
 </div>
