@@ -47,6 +47,7 @@
 <div class="telemetry-container">
 	<div class="legend">
 		<span class="legend-item"><span class="dot retrieved-dot"></span> retrieved</span>
+		<span class="legend-item"><span class="dot grounded-dot"></span> grounded</span>
 		<span class="legend-item"><span class="dot cited-dot"></span> cited</span>
 		<span class="legend-item"><span class="dot engaged-dot"></span> engaged</span>
 		{#if sessionId}
@@ -63,10 +64,10 @@
 		{/if}
 
 		{#each events as event, i}
-			<div class="event" class:retrieved={event.type === 'content_retrieved'} class:cited={event.type === 'content_cited'} class:engaged={event.type === 'content_engaged'}>
+			<div class="event" class:retrieved={event.type === 'content_retrieved'} class:grounded={event.type === 'content_grounded'} class:cited={event.type === 'content_cited'} class:engaged={event.type === 'content_engaged'}>
 				<div class="event-header">
-					<span class="badge" class:badge-retrieved={event.type === 'content_retrieved'} class:badge-cited={event.type === 'content_cited'} class:badge-engaged={event.type === 'content_engaged'}>
-						{event.type === 'content_retrieved' ? 'RETRIEVED' : event.type === 'content_cited' ? 'CITED' : 'ENGAGED'}
+					<span class="badge" class:badge-retrieved={event.type === 'content_retrieved'} class:badge-grounded={event.type === 'content_grounded'} class:badge-cited={event.type === 'content_cited'} class:badge-engaged={event.type === 'content_engaged'}>
+						{event.type === 'content_retrieved' ? 'RETRIEVED' : event.type === 'content_grounded' ? 'GROUNDED' : event.type === 'content_cited' ? 'CITED' : 'ENGAGED'}
 					</span>
 					{#if event.publisher}
 						<span class="publisher-badge" class:publisher-guardian={event.publisher === 'The Guardian'} class:publisher-telegraph={event.publisher === 'Telegraph'}>
@@ -147,6 +148,10 @@
 		border-left: 3px solid #7c3aed;
 	}
 
+	.event.grounded {
+		border-left: 3px solid #0891b2;
+	}
+
 	.event.cited {
 		border-left: 3px solid #16a34a;
 	}
@@ -173,6 +178,11 @@
 	.badge-retrieved {
 		background: #ede9fe;
 		color: #7c3aed;
+	}
+
+	.badge-grounded {
+		background: #cffafe;
+		color: #0891b2;
 	}
 
 	.badge-cited {
@@ -279,6 +289,10 @@
 
 	.retrieved-dot {
 		background: #7c3aed;
+	}
+
+	.grounded-dot {
+		background: #0891b2;
 	}
 
 	.cited-dot {

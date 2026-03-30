@@ -122,7 +122,43 @@ export const POST: RequestHandler = async ({ request }) => {
 					});
 				}
 
-				// 5. Build context from all available sources
+				// 5. Emit content_grounded for articles entering the LLM context
+				const groundedUrls: { url: string; publisher: string; cached: boolean }[] = [];
+				for (const a of newGuardianArticles) {
+					groundedUrls.push({ url: a.webUrl, publisher: 'The Guardian', cached: false });
+				}
+				for (const a of newTelegraphItems) {
+					groundedUrls.push({ url: a.link, publisher: 'Telegraph', cached: false });
+				}
+				for (const s of existingSources) {
+					groundedUrls.push({ url: s.url, publisher: s.publisher ?? 'unknown', cached: true });
+				}
+
+				if (groundedUrls.length > 0) {
+					for (const { url, cached } of groundedUrls) {
+						// content_grounded is in the spec but not yet in the SDK's EventType union
+						await telemetry.recordEvent(sid, 'content_grounded' as any, {
+							contentUrl: url,
+							data: { scope: 'turn', cached }
+						});
+					}
+
+					const byPublisher = new Map<string, string[]>();
+					for (const { url, publisher } of groundedUrls) {
+						if (!byPublisher.has(publisher)) byPublisher.set(publisher, []);
+						byPublisher.get(publisher)!.push(url);
+					}
+					for (const [pub, urls] of byPublisher) {
+						send('telemetry', {
+							type: 'content_grounded',
+							count: urls.length,
+							urls,
+							publisher: pub
+						});
+					}
+				}
+
+				// 6. Build context from all available sources (these are the grounded articles)
 				const contextParts: string[] = [];
 				let idx = 0;
 
@@ -218,14 +254,14 @@ export const POST: RequestHandler = async ({ request }) => {
 					}
 				];
 
-				// 6. Stream Mistral response
+				// 7. Stream Mistral response
 				let fullResponse = '';
 				for await (const chunk of streamMistralChat(messages)) {
 					fullResponse += chunk;
 					send('token', { text: chunk });
 				}
 
-				// 7. Parse citations and emit content_cited — grouped by publisher
+				// 8. Parse citations and emit content_cited — grouped by publisher
 				const indexedUrls = extractIndexedCitations(fullResponse, citableSources);
 				const inlineUrls = extractCitationUrls(fullResponse);
 
@@ -259,7 +295,7 @@ export const POST: RequestHandler = async ({ request }) => {
 					}
 				}
 
-				// 8. Done — send all citable sources so client can link citations
+				// 9. Done — send all citable sources so client can link citations
 				const citedIndices: number[] = [];
 				for (const url of indexedUrls) {
 					const i = citableSources.findIndex((s) => s.url === url);
