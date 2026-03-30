@@ -1,7 +1,8 @@
-// Public RSS feed for now. When Telegraph provides production API access,
-// switch to authenticated endpoint: https://api.telegraph.co.uk/tmg-feed
-// with headers: { app_key: TELEGRAPH_API_KEY }
-const FEED_URL = 'https://www.telegraph.co.uk/rss.xml';
+import { TELEGRAPH_API_KEY, TELEGRAPH_API_URL } from '$env/static/private';
+
+// TELEGRAPH_API_URL overrides the default public RSS — set in production to
+// point at the authenticated endpoint (e.g. https://api.telegraph.co.uk/tmg-feed).
+const PUBLIC_URL = 'https://www.telegraph.co.uk/rss.xml';
 
 export interface TelegraphItem {
 	title: string;
@@ -14,9 +15,14 @@ export interface TelegraphItem {
 	body: string;
 }
 
-/** Fetch the Telegraph RSS feed. */
+/** Fetch the Telegraph RSS feed — authenticated API in production, public RSS locally. */
 async function fetchFeed(): Promise<TelegraphItem[]> {
-	const res = await fetch(FEED_URL);
+	const useApi = !!TELEGRAPH_API_URL;
+	const res = await fetch(useApi ? TELEGRAPH_API_URL : PUBLIC_URL, {
+		headers: useApi
+			? { app_key: TELEGRAPH_API_KEY, 'User-Agent': 'TMGH-Service' }
+			: {}
+	});
 	if (!res.ok) throw new Error(`Telegraph RSS error: ${res.status}`);
 
 	const xml = await res.text();
@@ -61,7 +67,8 @@ function extractGuid(xml: string): string {
 }
 
 function extractCategory(xml: string): string {
-	// Public feed uses structure:section format, e.g. "structure:sport"
+	// API feed uses plain values: news, sport, opinion-comment, sponsored
+	// Public feed used structure:section format — handle both for safety
 	const structureMatch = xml.match(/<category[^>]*>structure:([^<]+)<\/category>/);
 	if (structureMatch) return structureMatch[1].trim();
 	const match = xml.match(/<category[^>]*>([^<]*)<\/category>/);
@@ -107,7 +114,13 @@ async function getCachedFeed(): Promise<TelegraphItem[]> {
  * Returns top matches ranked by keyword hit count.
  */
 export async function searchTelegraph(query: string, maxResults = 5): Promise<TelegraphItem[]> {
-	const items = await getCachedFeed();
+	let items: TelegraphItem[];
+	try {
+		items = await getCachedFeed();
+	} catch (err) {
+		console.error('Telegraph feed unavailable:', err);
+		return [];
+	}
 
 	// Extract keywords from query — strip operators and short words
 	const keywords = query

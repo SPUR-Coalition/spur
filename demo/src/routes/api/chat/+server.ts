@@ -53,9 +53,12 @@ export const POST: RequestHandler = async ({ request }) => {
 				let allSources: ArticleSummary[] = [...existingSources];
 
 				if (searchParams.needsSearch) {
-					// 2. Search both publishers in parallel
+					// 2. Search both publishers in parallel — each degrades independently
 					const [guardianResults, telegraphResults] = await Promise.all([
-						searchGuardian(searchParams),
+						searchGuardian(searchParams).catch((err) => {
+							console.error('Guardian search failed:', err);
+							return [] as GuardianResult[];
+						}),
 						searchTelegraph(searchParams.query)
 					]);
 

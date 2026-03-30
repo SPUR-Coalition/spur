@@ -8,7 +8,7 @@ import { TelemetryClient } from '@openattribution/telemetry';
 export const telemetry = new TelemetryClient({
 	endpoint: OA_SERVER_URL,
 	apiKey: OA_PLATFORM_KEY,
-	failSilently: false
+	failSilently: true
 });
 
 // ---------------------------------------------------------------------------
