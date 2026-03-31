@@ -6,7 +6,7 @@ SPUR coalition demo - a live chat interface showing AI content attribution with 
 
 ## Stack
 
-SvelteKit 2, Svelte 5, TypeScript, `@openattribution/telemetry` SDK, Vercel adapter, Marked (markdown rendering).
+SvelteKit 2, Svelte 5, TypeScript, `@openattribution/telemetry` SDK, Cloudflare Pages adapter, Marked (markdown rendering).
 
 ## Commands
 
@@ -37,7 +37,7 @@ Coalition docs (specs, reference, advocacy, data) are in the private [SPUR-Coali
 
 ## Deployment
 
-Vercel.
+Cloudflare Pages.
 
 ## Conventions
 
