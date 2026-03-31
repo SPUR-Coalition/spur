@@ -32,9 +32,8 @@ Copy `demo/.env.example` and fill in:
 ## Repo structure
 
 - `demo/` - SvelteKit app (all application code lives here)
-- `docs/` - specs, presentations, reference material
-- `data/` - PolicyCheck results, domain lists
-- `resources/` - images and assets
+
+Coalition docs (specs, reference, advocacy, data) are in the private [SPUR-Coalition/org](https://github.com/SPUR-Coalition/org) repo.
 
 ## Deployment
 
