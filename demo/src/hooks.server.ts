@@ -1,5 +1,6 @@
 import type { Handle } from '@sveltejs/kit';
 import { env } from '$env/dynamic/private';
+import { TelemetryClient } from '@openattribution/telemetry';
 
 const COOKIE_NAME = 'spur_demo_auth';
 
@@ -24,31 +25,32 @@ function isAiBot(ua: string): string | null {
 	return null;
 }
 
-function reportEdgeEvent(url: string, ua: string, botMatch: string) {
+let edgeClient: TelemetryClient | null = null;
+
+function getEdgeClient(): TelemetryClient | null {
+	if (edgeClient) return edgeClient;
 	const endpoint = env.OA_SERVER_URL;
 	const apiKey = env.OA_PLATFORM_KEY;
-	if (!endpoint || !apiKey) return;
+	if (!endpoint || !apiKey) return null;
+	edgeClient = new TelemetryClient({ endpoint, apiKey, failSilently: true });
+	return edgeClient;
+}
 
-	const event = {
-		type: 'content_retrieved',
-		timestamp: new Date().toISOString(),
-		content_url: url,
-		source_role: 'edge',
+async function reportEdgeEvent(url: string, ua: string, botMatch: string) {
+	const client = getEdgeClient();
+	if (!client) return;
+
+	const sessionId = await client.startSession({ initiatorType: 'user' });
+	if (!sessionId) return;
+
+	await client.recordEvent(sessionId, 'content_retrieved', {
+		contentUrl: url,
 		data: {
+			source_role: 'edge',
 			user_agent: ua,
 			bot_match: botMatch,
 		},
-	};
-
-	// Fire and forget
-	fetch(`${endpoint}/events`, {
-		method: 'POST',
-		headers: {
-			'Content-Type': 'application/json',
-			'X-API-Key': apiKey,
-		},
-		body: JSON.stringify({ events: [event] }),
-	}).catch(() => {});
+	});
 }
 
 export const handle: Handle = async ({ event, resolve }) => {
