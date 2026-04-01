@@ -17,6 +17,7 @@ node_modules/
 
 # SvelteKit
 .svelte-kit/
+.vercel/
 
 # Claude Code
 .claude/
@@ -34,4 +35,4 @@ Thumbs.db
 .vscode/
 *.swp
 *.swo
-.gstack/
+.vercel
