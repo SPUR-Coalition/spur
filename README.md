@@ -32,7 +32,8 @@ npm run dev             # http://localhost:5173
 | `DEMO_PASSWORD` | Password for the demo (leave blank to disable auth locally) |
 | `GUARDIAN_API_KEY` | Guardian Open Platform API key |
 | `MISTRAL_API_KEY` | Mistral AI chat completions |
-| `OA_SERVER_URL` | OpenAttribution telemetry endpoint |
+| `OA_TELEMETRY_URL` | OpenAttribution write endpoint (telemetry.openattribution.org) |
+| `OA_API_URL` | OpenAttribution read endpoint (api.openattribution.org) |
 | `OA_PLATFORM_KEY` | Platform key for writing telemetry events |
 | `OA_PUBLISHER_KEY` | Publisher key for reading dashboard data |
 

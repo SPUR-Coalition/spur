@@ -24,7 +24,8 @@ Copy `demo/.env.example` and fill in:
 - `GUARDIAN_API_KEY` - Guardian Open Platform API
 - `TELEGRAPH_API_KEY` - Telegraph RSS Feed API
 - `MISTRAL_API_KEY` - Mistral AI
-- `OA_SERVER_URL` - OpenAttribution telemetry endpoint
+- `OA_TELEMETRY_URL` - OpenAttribution write endpoint
+- `OA_API_URL` - OpenAttribution read endpoint
 - `OA_PLATFORM_KEY` - platform-level OA key
 - `OA_PUBLISHER_KEY_GUARDIAN`, `OA_PUBLISHER_KEY_TELEGRAPH` - per-publisher OA keys
 - `DEMO_PASSWORD` - optional, leave blank to disable auth locally

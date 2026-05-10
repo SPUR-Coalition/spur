@@ -29,7 +29,7 @@ let edgeClient: TelemetryClient | null = null;
 
 function getEdgeClient(): TelemetryClient | null {
 	if (edgeClient) return edgeClient;
-	const endpoint = env.OA_SERVER_URL;
+	const endpoint = env.OA_TELEMETRY_URL;
 	const apiKey = env.OA_PLATFORM_KEY;
 	if (!endpoint || !apiKey) return null;
 	edgeClient = new TelemetryClient({ endpoint, apiKey, failSilently: true });
