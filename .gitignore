@@ -36,3 +36,6 @@ Thumbs.db
 *.swp
 *.swo
 .vercel
+
+# Agent tooling state
+.gstack/
