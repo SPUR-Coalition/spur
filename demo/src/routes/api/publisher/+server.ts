@@ -1,7 +1,14 @@
 import type { RequestHandler } from './$types';
-import { getPublisherSummary, getPublisherEvents, getPublisherUrls } from '$lib/server/oa';
+import { getPublisherSummary, getPublisherEvents, getPublisherUrls, OaReadError } from '$lib/server/oa';
 
 const VALID_PUBLISHERS = ['guardian', 'telegraph'];
+
+function json(body: unknown, status = 200) {
+	return new Response(JSON.stringify(body), {
+		status,
+		headers: { 'Content-Type': 'application/json' }
+	});
+}
 
 export const GET: RequestHandler = async ({ url }) => {
 	const view = url.searchParams.get('view') ?? 'summary';
@@ -9,38 +16,28 @@ export const GET: RequestHandler = async ({ url }) => {
 	const publisher = url.searchParams.get('publisher') ?? 'guardian';
 
 	if (!VALID_PUBLISHERS.includes(publisher)) {
-		return new Response(JSON.stringify({ error: `Invalid publisher: ${publisher}` }), {
-			status: 400,
-			headers: { 'Content-Type': 'application/json' }
-		});
+		return json({ error: `Invalid publisher: ${publisher}` }, 400);
 	}
 
 	try {
-		let data;
 		switch (view) {
 			case 'summary':
-				data = await getPublisherSummary(publisher);
-				break;
+				return json(await getPublisherSummary(publisher));
 			case 'events':
-				data = await getPublisherEvents(publisher, limit);
-				break;
+				return json(await getPublisherEvents(publisher, limit));
 			case 'urls':
-				data = await getPublisherUrls(publisher, limit);
-				break;
+				return json(await getPublisherUrls(publisher, limit));
 			default:
-				return new Response(JSON.stringify({ error: 'Invalid view' }), {
-					status: 400,
-					headers: { 'Content-Type': 'application/json' }
-				});
+				return json({ error: 'Invalid view' }, 400);
 		}
-
-		return new Response(JSON.stringify(data), {
-			headers: { 'Content-Type': 'application/json' }
-		});
 	} catch (err) {
-		return new Response(JSON.stringify({ error: String(err) }), {
-			status: 502,
-			headers: { 'Content-Type': 'application/json' }
-		});
+		// Surface what actually failed: auth problems (stale key) come back
+		// as 502 with the upstream status attached, so the pane can show a
+		// real diagnostic instead of blanking.
+		if (err instanceof OaReadError) {
+			return json({ error: err.detail, upstream_status: err.status }, 502);
+		}
+		console.error(`Publisher ${view} fetch failed for ${publisher}:`, err);
+		return json({ error: 'OA server unreachable' }, 502);
 	}
 };

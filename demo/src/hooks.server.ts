@@ -1,6 +1,5 @@
 import type { Handle } from '@sveltejs/kit';
 import { env } from '$env/dynamic/private';
-import { TelemetryClient } from '@openattribution/telemetry';
 
 const COOKIE_NAME = 'spur_demo_auth';
 
@@ -25,32 +24,40 @@ function isAiBot(ua: string): string | null {
 	return null;
 }
 
-let edgeClient: TelemetryClient | null = null;
-
-function getEdgeClient(): TelemetryClient | null {
-	if (edgeClient) return edgeClient;
+/**
+ * Report an AI bot request as a standalone origin retrieval event
+ * (Content Telemetry spec 7.1): no session, `source_role: "origin"` —
+ * the origin web server observed the fetch, it did not initiate an
+ * agent session. Posted directly because the SDK (0.4.0) only records
+ * events inside a session. Failures are logged and swallowed: bot
+ * detection must never affect page serving.
+ */
+async function reportOriginRetrieval(url: string, ua: string, botMatch: string) {
 	const endpoint = env.OA_TELEMETRY_URL;
 	const apiKey = env.OA_PLATFORM_KEY;
-	if (!endpoint || !apiKey) return null;
-	edgeClient = new TelemetryClient({ endpoint, apiKey, failSilently: true });
-	return edgeClient;
-}
+	if (!endpoint || !apiKey) return;
 
-async function reportEdgeEvent(url: string, ua: string, botMatch: string) {
-	const client = getEdgeClient();
-	if (!client) return;
-
-	const sessionId = await client.startSession({ initiatorType: 'user' });
-	if (!sessionId) return;
-
-	await client.recordEvent(sessionId, 'content_retrieved', {
-		contentUrl: url,
-		data: {
-			source_role: 'edge',
-			user_agent: ua,
-			bot_match: botMatch,
-		},
-	});
+	try {
+		const res = await fetch(`${endpoint}/events`, {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json', 'X-API-Key': apiKey },
+			body: JSON.stringify({
+				document_type: 'event',
+				event: {
+					type: 'content_retrieved',
+					timestamp: new Date().toISOString(),
+					source_role: 'origin',
+					content_url: url,
+					data: { user_agent: ua, bot_match: botMatch }
+				}
+			})
+		});
+		if (!res.ok) {
+			console.error(`Origin bot telemetry failed: ${res.status} ${await res.text()}`);
+		}
+	} catch (err) {
+		console.error('Origin bot telemetry failed:', err);
+	}
 }
 
 export const handle: Handle = async ({ event, resolve }) => {
@@ -58,7 +65,7 @@ export const handle: Handle = async ({ event, resolve }) => {
 	const ua = event.request.headers.get('user-agent') || '';
 	const botMatch = isAiBot(ua);
 	if (botMatch) {
-		reportEdgeEvent(event.url.href, ua, botMatch);
+		reportOriginRetrieval(event.url.href, ua, botMatch);
 	}
 
 	const password = env.DEMO_PASSWORD;

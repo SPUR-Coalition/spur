@@ -58,9 +58,10 @@ export interface AgentBreakdown {
 }
 
 export interface PublisherSummary {
-	publisher_id: string;
-	publisher_name: string;
+	organization_id: string;
 	domains: string[];
+	/** True when the org is a demo fixture — its data is fabricated. */
+	synthetic: boolean;
 	total_events: number;
 	total_sessions: number;
 	events_by_type: EventTypeCount[];

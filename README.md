@@ -6,15 +6,14 @@ This repo contains demo applications, compliance data, specs, and documentation 
 
 ## What's here
 
-- **`demo/`** - Three-pane live demo (SvelteKit, deployed on Vercel) showing a chat interface, real-time telemetry feed, and publisher dashboard
-- **`docs/specs/`** - Technical roadmap and specifications
-- **`docs/reference/`** - Landscape research, compliance baselines, API references
-- **`docs/presentations/`** - Presentation briefs and slide content
-- **`data/`** - PolicyCheck scan results and member domain lists
+- **`demo/`** - Three-pane live demo (SvelteKit, deployed on Vercel) showing a chat interface, real-time telemetry feed, and per-publisher dashboard
+
+Coalition docs (specs, reference, advocacy, data) live in the private
+[SPUR-Coalition/org](https://github.com/SPUR-Coalition/org) repo.
 
 ## Demo app
 
-The demo shows what inference-time telemetry looks like in practice. A user chats with an AI assistant that retrieves Guardian articles, and each retrieval and citation fires telemetry events visible in real time on a publisher dashboard.
+The demo shows what inference-time telemetry looks like in practice. A user chats with an AI assistant that retrieves Guardian and Telegraph articles, and each retrieval, grounding, and citation fires telemetry events visible in real time on a per-publisher dashboard.
 
 ### Setup
 
@@ -25,17 +24,21 @@ cp .env.example .env   # then fill in your keys
 npm run dev             # http://localhost:5173
 ```
 
+For the full local stack (OA server, key minting, the walkthrough click-path)
+see [demo/RUNBOOK.md](demo/RUNBOOK.md).
+
 ### Environment variables
 
 | Variable | Purpose |
 |----------|---------|
 | `DEMO_PASSWORD` | Password for the demo (leave blank to disable auth locally) |
 | `GUARDIAN_API_KEY` | Guardian Open Platform API key |
+| `TELEGRAPH_API_KEY`, `TELEGRAPH_API_URL` | Telegraph RSS feed API |
 | `MISTRAL_API_KEY` | Mistral AI chat completions |
-| `OA_TELEMETRY_URL` | OpenAttribution write endpoint (telemetry.openattribution.org) |
-| `OA_API_URL` | OpenAttribution read endpoint (api.openattribution.org) |
-| `OA_PLATFORM_KEY` | Platform key for writing telemetry events |
-| `OA_PUBLISHER_KEY` | Publisher key for reading dashboard data |
+| `OA_TELEMETRY_URL` | OA server write endpoint (sessions, events) |
+| `OA_API_URL` | OA server read endpoint (`/content-owners/*`) |
+| `OA_PLATFORM_KEY` | Chat agent write key (`oat_pk_` prefix) |
+| `OA_PUBLISHER_KEY_GUARDIAN`, `OA_PUBLISHER_KEY_TELEGRAPH` | Per-publisher read keys (`oat_pub_` prefix) |
 
 ## Stack
 

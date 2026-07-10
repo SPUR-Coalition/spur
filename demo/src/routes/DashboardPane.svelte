@@ -20,6 +20,12 @@
 	let loading = $state(true);
 	let error: string | null = $state(null);
 
+	async function describeFailure(res: Response): Promise<string> {
+		const body = await res.json().catch(() => null);
+		const upstream = body?.upstream_status ? ` (OA server returned ${body.upstream_status})` : '';
+		return `Publisher feed failed${upstream}: ${body?.error ?? res.statusText}`;
+	}
+
 	async function fetchData() {
 		try {
 			error = null;
@@ -31,8 +37,11 @@
 				fetch(`/api/publisher?view=urls&limit=10&publisher=${pub}`)
 			]);
 
-			if (summaryRes.ok) summary = await summaryRes.json();
-			else summary = null;
+			// A failed read is a diagnostic, never a silent blank.
+			const failed = [summaryRes, eventsRes, urlsRes].find((r) => !r.ok);
+			if (failed) error = await describeFailure(failed);
+
+			summary = summaryRes.ok ? await summaryRes.json() : null;
 
 			if (eventsRes.ok) {
 				const data: Paginated<PublisherEvent> = await eventsRes.json();
@@ -129,7 +138,7 @@
 					<div class="agent-list">
 						{#each summary.agents as agent}
 							<div class="agent-row">
-								<span class="agent-name">{agent.platform_id ?? 'unknown'}{agent.agent_id ? ` / ${agent.agent_id}` : ''}</span>
+								<span class="agent-name">{[agent.platform_id, agent.agent_id].filter(Boolean).join(' / ') || 'unknown'}</span>
 								<div class="agent-stats">
 									<span class="stat">{agent.event_count} events</span>
 									<span class="stat">{agent.session_count} sessions</span>

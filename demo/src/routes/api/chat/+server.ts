@@ -139,8 +139,7 @@ export const POST: RequestHandler = async ({ request }) => {
 
 				if (groundedUrls.length > 0) {
 					for (const { url, cached } of groundedUrls) {
-						// content_grounded is in the spec but not yet in the SDK's EventType union
-						await telemetry.recordEvent(sid, 'content_grounded' as any, {
+						await telemetry.recordEvent(sid, 'content_grounded', {
 							contentUrl: url,
 							data: { scope: 'turn', cached }
 						});
