@@ -1,7 +1,10 @@
 <script>
 	import ChatPane from './ChatPane.svelte';
 	import TelemetryPane from './TelemetryPane.svelte';
-	import DashboardPane from './DashboardPane.svelte';
+	// Publisher dashboard hidden 2026-07-10: production has no verified
+	// Guardian/Telegraph domains post-R27, so the pane can only read empty.
+	// Restore the import + pane block when publisher verification lands.
+	// import DashboardPane from './DashboardPane.svelte';
 </script>
 
 <div class="panes">
@@ -13,10 +16,12 @@
 		<div class="pane-header">Telemetry events</div>
 		<TelemetryPane />
 	</div>
+	<!--
 	<div class="pane dashboard">
 		<div class="pane-header">Publisher dashboard</div>
 		<DashboardPane />
 	</div>
+	-->
 </div>
 
 <style>
