@@ -8,8 +8,6 @@ This repo contains demo applications, compliance data, specs, and documentation 
 
 - **`demo/`** - Three-pane live demo (SvelteKit, deployed on Vercel) showing a chat interface, real-time telemetry feed, and per-publisher dashboard
 
-Coalition docs (specs, reference, advocacy, data) live in the private
-[SPUR-Coalition/org](https://github.com/SPUR-Coalition/org) repo.
 
 ## Demo app
 
