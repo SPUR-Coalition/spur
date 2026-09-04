@@ -64,10 +64,10 @@
 		{/if}
 
 		{#each events as event, i}
-			<div class="event" class:retrieved={event.type === 'content_retrieved'} class:grounded={event.type === 'content_grounded'} class:cited={event.type === 'content_cited'} class:engaged={event.type === 'content_engaged'}>
+			<div class="event" class:retrieved={event.type === 'content_retrieved'} class:grounded={event.type === 'content_grounded'} class:cited={event.type === 'content_cited'} class:presented={event.type === 'content_presented'} class:engaged={event.type === 'content_engaged'}>
 				<div class="event-header">
-					<span class="badge" class:badge-retrieved={event.type === 'content_retrieved'} class:badge-grounded={event.type === 'content_grounded'} class:badge-cited={event.type === 'content_cited'} class:badge-engaged={event.type === 'content_engaged'}>
-						{event.type === 'content_retrieved' ? 'RETRIEVED' : event.type === 'content_grounded' ? 'GROUNDED' : event.type === 'content_cited' ? 'CITED' : 'ENGAGED'}
+					<span class="badge" class:badge-retrieved={event.type === 'content_retrieved'} class:badge-grounded={event.type === 'content_grounded'} class:badge-cited={event.type === 'content_cited'} class:badge-presented={event.type === 'content_presented'} class:badge-engaged={event.type === 'content_engaged'}>
+						{event.type === 'content_retrieved' ? 'RETRIEVED' : event.type === 'content_grounded' ? 'GROUNDED' : event.type === 'content_cited' ? 'CITED' : event.type === 'content_presented' ? 'PRESENTED' : 'ENGAGED'}
 					</span>
 					{#if event.publisher}
 						<span class="publisher-badge" class:publisher-guardian={event.publisher === 'The Guardian'} class:publisher-telegraph={event.publisher === 'Telegraph'}>
@@ -156,6 +156,10 @@
 		border-left: 3px solid #16a34a;
 	}
 
+	.event.presented {
+		border-left: 3px solid #db2777;
+	}
+
 	.event.engaged {
 		border-left: 3px solid #d97706;
 	}
@@ -188,6 +192,11 @@
 	.badge-cited {
 		background: #dcfce7;
 		color: #16a34a;
+	}
+
+	.badge-presented {
+		background: #fce7f3;
+		color: #db2777;
 	}
 
 	.badge-engaged {

@@ -98,11 +98,24 @@ export const POST: RequestHandler = async ({ request }) => {
 					send('session', { session_id: sid });
 				}
 
+				// Turn association (spec 5.2.1). history includes the current user
+				// message, so turn n covers messages [2n-2, 2n-1].
+				const turnId = String(Math.max(1, Math.ceil(history.length / 2)));
+				const outputId = `response:${turnId}`;
+
+				// The demo discloses at the SPUR floor: minimal privacy — no query
+				// text, no intent, no topics. Content URLs stay visible; that is
+				// the signal the format exists to carry.
+				await telemetry.recordEvent(sid, 'turn_started', {
+					turnId,
+					turn: { privacyLevel: 'minimal' }
+				});
+
 				// 4. Emit content_retrieved — grouped by publisher
 				if (newGuardianArticles.length > 0) {
 					const retrievedUrls = newGuardianArticles.map((a) => a.webUrl);
 					for (const url of retrievedUrls) {
-						await telemetry.recordEvent(sid, 'content_retrieved', { contentUrl: url });
+						await telemetry.recordEvent(sid, 'content_retrieved', { contentUrl: url, turnId });
 					}
 					send('telemetry', {
 						type: 'content_retrieved',
@@ -115,7 +128,7 @@ export const POST: RequestHandler = async ({ request }) => {
 				if (newTelegraphItems.length > 0) {
 					const retrievedUrls = newTelegraphItems.map((a) => a.link);
 					for (const url of retrievedUrls) {
-						await telemetry.recordEvent(sid, 'content_retrieved', { contentUrl: url });
+						await telemetry.recordEvent(sid, 'content_retrieved', { contentUrl: url, turnId });
 					}
 					send('telemetry', {
 						type: 'content_retrieved',
@@ -141,6 +154,7 @@ export const POST: RequestHandler = async ({ request }) => {
 					for (const { url, cached } of groundedUrls) {
 						await telemetry.recordEvent(sid, 'content_grounded', {
 							contentUrl: url,
+							turnId,
 							data: { scope: 'turn', cached }
 						});
 					}
@@ -271,12 +285,28 @@ export const POST: RequestHandler = async ({ request }) => {
 				const extraUrls = inlineUrls.filter((u) => !knownUrls.has(u));
 				const allCitedUrls = [...new Set([...indexedUrls, ...extraUrls])];
 
+				// Every citation renders as an inline [n] link in the response, so
+				// each cited source also gets a content_presented event (a
+				// source_reference link presentation, spec 6.6). The presentation
+				// ids flow back to the client: a click must reference the exact
+				// presentation it occurred on (spec 6.7).
+				const presentationIds: Record<string, string> = {};
 				if (allCitedUrls.length > 0) {
 					for (const url of allCitedUrls) {
-						await telemetry.recordEvent(sid, 'content_cited', {
+						const citationId = await telemetry.recordEvent(sid, 'content_cited', {
 							contentUrl: url,
+							turnId,
+							outputId,
 							data: { citation_type: 'reference' }
 						});
+						const presentationId = await telemetry.recordEvent(sid, 'content_presented', {
+							contentUrl: url,
+							turnId,
+							outputId,
+							...(citationId != null && { citationId }),
+							data: { presentation_kind: 'source_reference', presentation_type: 'link' }
+						});
+						if (presentationId != null) presentationIds[url] = presentationId;
 					}
 
 					// Group cited URLs by publisher for telemetry display
@@ -294,8 +324,22 @@ export const POST: RequestHandler = async ({ request }) => {
 							urls,
 							publisher: pub
 						});
+						send('telemetry', {
+							type: 'content_presented',
+							count: urls.length,
+							urls,
+							publisher: pub
+						});
 					}
 				}
+
+				await telemetry.recordEvent(sid, 'turn_completed', {
+					turnId,
+					turn: {
+						privacyLevel: 'minimal',
+						contentUrlsCited: allCitedUrls
+					}
+				});
 
 				// 9. Done — send all citable sources so client can link citations
 				const citedIndices: number[] = [];
@@ -307,6 +351,7 @@ export const POST: RequestHandler = async ({ request }) => {
 				send('done', {
 					session_id: sid,
 					allSources: citableSources,
+					presentationIds,
 					citations: citedIndices.map((i) => ({
 						marker: `[${i + 1}]`,
 						url: citableSources[i]?.url,

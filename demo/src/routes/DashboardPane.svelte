@@ -174,8 +174,8 @@
 					<div class="events-list">
 						{#each recentEvents as event}
 							<div class="event-row">
-								<span class="event-badge" class:retrieved={event.event_type === 'content_retrieved'} class:grounded={event.event_type === 'content_grounded'} class:cited={event.event_type === 'content_cited'} class:engaged={event.event_type === 'content_engaged'}>
-									{event.event_type === 'content_retrieved' ? 'RET' : event.event_type === 'content_grounded' ? 'GRN' : event.event_type === 'content_cited' ? 'CIT' : 'ENG'}
+								<span class="event-badge" class:retrieved={event.event_type === 'content_retrieved'} class:grounded={event.event_type === 'content_grounded'} class:cited={event.event_type === 'content_cited'} class:presented={event.event_type === 'content_presented'} class:engaged={event.event_type === 'content_engaged'}>
+									{event.event_type === 'content_retrieved' ? 'RET' : event.event_type === 'content_grounded' ? 'GRN' : event.event_type === 'content_cited' ? 'CIT' : event.event_type === 'content_presented' ? 'PRE' : 'ENG'}
 								</span>
 								{#if event.platform_id}
 									<span class="event-agent">{event.platform_id}</span>
@@ -414,6 +414,11 @@
 	.event-badge.cited {
 		background: #dcfce7;
 		color: #16a34a;
+	}
+
+	.event-badge.presented {
+		background: #fce7f3;
+		color: #db2777;
 	}
 
 	.event-badge.engaged {
