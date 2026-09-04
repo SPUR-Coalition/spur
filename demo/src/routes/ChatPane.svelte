@@ -25,6 +25,14 @@
 	let isStreaming = $state(false);
 	let messagesEl: HTMLDivElement;
 
+	/**
+	 * URL → content_presented event id for the citation links on screen.
+	 * A click's content_engaged event must reference the exact presentation
+	 * it occurred on (spec 6.7). Later presentations of the same URL win:
+	 * that is the link most recently rendered.
+	 */
+	let presentationIds: Record<string, string> = {};
+
 	/** Detect publisher from URL hostname. */
 	function publisherFromUrl(url: string): string | null {
 		try {
@@ -53,7 +61,7 @@
 		fetch('/api/engage', {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify({ sessionId, url })
+			body: JSON.stringify({ sessionId, url, presentationId: presentationIds[url] })
 		}).catch(() => {});
 
 		telemetryEvents.update((events) => [
@@ -161,6 +169,7 @@
 							scrollToBottom();
 							break;
 						case 'done':
+							presentationIds = { ...presentationIds, ...(data.presentationIds ?? {}) };
 							messages[assistantIdx] = {
 								...messages[assistantIdx],
 								// Use allSources for citation linking (covers both new and existing)

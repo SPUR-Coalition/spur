@@ -6,6 +6,13 @@ deep-dive).
 
 ## Stack
 
+> **Wire version.** The demo emits Content Telemetry **v1.0** (SDK
+> `@openattribution/telemetry` 1.0.x): `schema_version: "1.0"`,
+> `content_presented` events, and presentation-bound engagements. The
+> server it points at must accept v1.0 documents — a v0.1-only server
+> rejects every write (and the SDK fails silently, so the chat keeps
+> working while the dashboard stays empty).
+
 Three processes: Postgres, an OpenAttribution server (`oa-server`, port 8080), and
 this SvelteKit app (port 5173). The demo talks to the server only through the
 env-configured `OA_TELEMETRY_URL` (writes) and `OA_API_URL` (reads).
